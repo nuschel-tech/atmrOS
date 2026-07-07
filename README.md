@@ -53,12 +53,15 @@ Wired via the `plausible-tracker` npm package — **no third-party `<script>`
 tag**, and nothing is loaded or sent until you set a domain. It also stays
 silent in development.
 
-To turn it on, set the domain (in `.env` locally, or as a deploy env var):
+It points at the self-hosted MultaEnhavo instance
+(`https://analytics.multaenhavo.com`) by default, so you only need to set the
+site domain to turn it on (in `.env` locally, or as a deploy env var):
 
 ```bash
 PUBLIC_PLAUSIBLE_DOMAIN=atomar.org
-# self-hosting Plausible? point at your instance:
-# PUBLIC_PLAUSIBLE_API_HOST=https://stats.example.com
+# API host defaults to https://analytics.multaenhavo.com;
+# override only if that ever changes:
+# PUBLIC_PLAUSIBLE_API_HOST=https://analytics.example.com
 ```
 
 Because it's read at runtime (`$env/dynamic/public`), flipping it on/off needs

@@ -7,9 +7,12 @@
  *
  * Configure via public env vars (see .env.example):
  *   PUBLIC_PLAUSIBLE_DOMAIN    e.g. "atomar.org"   -> enables tracking
- *   PUBLIC_PLAUSIBLE_API_HOST  optional, defaults to https://plausible.io
- *                              set this if you self-host Plausible
+ *   PUBLIC_PLAUSIBLE_API_HOST  optional; defaults to the self-hosted
+ *                              instance at https://analytics.multaenhavo.com
  */
+
+/** Self-hosted Plausible instance (MultaEnhavo). Override via env if needed. */
+const DEFAULT_API_HOST = 'https://analytics.multaenhavo.com';
 import Plausible from 'plausible-tracker';
 import { env } from '$env/dynamic/public';
 
@@ -29,7 +32,7 @@ export function initAnalytics(): Plausible | null {
 
   instance = Plausible({
     domain,
-    apiHost: env.PUBLIC_PLAUSIBLE_API_HOST?.trim() || 'https://plausible.io',
+    apiHost: env.PUBLIC_PLAUSIBLE_API_HOST?.trim() || DEFAULT_API_HOST,
     // atmrOS is a single-page HUD; track SPA navigations automatically.
     hashMode: false
   });
