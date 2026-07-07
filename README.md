@@ -50,22 +50,22 @@ reference/
 ## Analytics (Plausible)
 
 Wired via the `plausible-tracker` npm package — **no third-party `<script>`
-tag**, and nothing is loaded or sent until you set a domain. It also stays
-silent in development.
+tag**. Domain and instance are baked in, so it works out of the box:
 
-It points at the self-hosted MultaEnhavo instance
-(`https://analytics.multaenhavo.com`) by default, so you only need to set the
-site domain to turn it on (in `.env` locally, or as a deploy env var):
+- **domain:** `atomar.org`
+- **API host:** `https://analytics.multaenhavo.com` (self-hosted, MultaEnhavo)
+
+Localhost is never tracked (plausible-tracker ignores it by default), so
+**development stays silent** automatically. Both defaults are overridable at
+runtime via env vars (`$env/dynamic/public`, no rebuild needed):
 
 ```bash
+# only if you ever need to override the built-ins
 PUBLIC_PLAUSIBLE_DOMAIN=atomar.org
-# API host defaults to https://analytics.multaenhavo.com;
-# override only if that ever changes:
-# PUBLIC_PLAUSIBLE_API_HOST=https://analytics.example.com
+PUBLIC_PLAUSIBLE_API_HOST=https://analytics.multaenhavo.com
 ```
 
-Because it's read at runtime (`$env/dynamic/public`), flipping it on/off needs
-no rebuild. Track custom events anywhere in the app:
+Track custom events anywhere in the app:
 
 ```ts
 import { trackEvent } from '$lib/analytics';
