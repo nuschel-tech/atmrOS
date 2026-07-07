@@ -10,7 +10,7 @@ _shows_ the data.
 
 - **SvelteKit 2** + **Svelte 5** (runes) + **Vite 5** + **TypeScript**
 - `@sveltejs/adapter-auto` (auto-detects Vercel / Netlify / Node on deploy)
-- **plausible-tracker** for privacy-friendly analytics (off by default)
+- **@barbapapazes/plausible-tracker** for privacy-friendly analytics
 
 ## Getting started
 
@@ -49,15 +49,16 @@ reference/
 
 ## Analytics (Plausible)
 
-Wired via the `plausible-tracker` npm package — **no third-party `<script>`
-tag**. Domain and instance are baked in, so it works out of the box:
+Wired via the maintained `@barbapapazes/plausible-tracker` npm package —
+**no third-party `<script>` tag**. Domain and instance are baked in, so it
+works out of the box:
 
 - **domain:** `atomar.org`
 - **API host:** `https://analytics.multaenhavo.com` (self-hosted, MultaEnhavo)
 
-Localhost is never tracked (plausible-tracker ignores it by default), so
-**development stays silent** automatically. Both defaults are overridable at
-runtime via env vars (`$env/dynamic/public`, no rebuild needed):
+Tracking is disabled under `npm run dev` (via SvelteKit's `dev` flag), so
+**local development stays silent**; production builds track. Both defaults are
+overridable at runtime via env vars (`$env/dynamic/public`, no rebuild needed):
 
 ```bash
 # only if you ever need to override the built-ins
