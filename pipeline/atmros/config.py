@@ -89,7 +89,7 @@ def database_url() -> str:
 # --- Rohlager ----------------------------------------------------------------
 ARCHIVE_DIR = os.environ.get("ATMROS_ARCHIVE_DIR", "/data/archive")
 
-# pyosmium Node-Location-Index für Way-Geometrie. 'flex_mem' hält die
+# osmium Node-Location-Index für Way-Geometrie. 'flex_mem' hält die
 # Knotenkoordinaten im RAM (für Bayern einige GB). Bei knappem RAM auf einen
 # disk-gestützten Index umstellen (z.B. 'sparse_file_array,/data/node.idx').
 OSM_LOCATION_INDEX = os.environ.get("ATMROS_OSM_INDEX", "flex_mem")

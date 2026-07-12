@@ -3,7 +3,7 @@
 Der Blocker (AttributeError: 'TagList' object has no attribute 'keys') wäre
 durch einen dict-basierten Test nicht auffindbar gewesen — dict hat keys(),
 TagList nicht. Deshalb bauen wir eine winzige .osm-Datei und rufen classify()
-INNERHALB des pyosmium-Callbacks auf, wo der echte TagList-Typ vorliegt
+INNERHALB des osmium-Callbacks auf, wo der echte TagList-Typ vorliegt
 (TagLists dürfen nach Rückkehr aus dem Callback nicht mehr benutzt werden).
 
 Laufbar mit pytest ODER standalone:  python tests/test_classify.py

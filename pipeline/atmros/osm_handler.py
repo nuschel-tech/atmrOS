@@ -1,7 +1,7 @@
-"""FILTERN — pyosmium-Handler, der das PBF streamt und relevante Objekte
+"""FILTERN — osmium-Handler, der das PBF streamt und relevante Objekte
 als vollständig materialisierte Records ausgibt.
 
-Wichtig (pyosmium-Fallstrick): Tags und Locations dürfen NICHT nach Rückkehr
+Wichtig (osmium-Fallstrick): Tags und Locations dürfen NICHT nach Rückkehr
 aus dem Callback gelesen werden — der Puffer wird wiederverwendet. Deshalb
 bauen wir das Record-Dict komplett im Callback und geben es sofort an den
 Sink weiter.
