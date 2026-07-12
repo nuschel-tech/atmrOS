@@ -76,16 +76,20 @@ die Karte leer.
 
 **Ein** Proxy Host für `atomar.org`, plus **eine** Custom Location für die API.
 
+Die Container heißen fix `atmros-web`, `atmros-api`, `atmros-db`. Läuft NPM im
+selben Docker-Netz, kannst du direkt diese Namen als Forward-Hostname nehmen
+(sonst die `<server-ip>` mit den gemappten Ports 4321/8000).
+
 1. **Proxy Host anlegen**
    - Domain Names: `atomar.org` (ggf. `www.atomar.org`)
-   - Forward Hostname/Port: `<server-ip>` : `4321`  (das Frontend)
+   - Forward Hostname/Port: `atmros-web` : `4321`  (bzw. `<server-ip>` : `4321`)
    - Tab **SSL**: Let's-Encrypt-Zertifikat, „Force SSL" + „HTTP/2" an
    - „Block Common Exploits" an; Websockets nicht nötig
 
 2. **Custom Location für die API** (im selben Proxy Host, Tab „Custom locations")
    - Location: `/api`
    - Scheme: `http`
-   - Forward Hostname/IP: `<server-ip>`  (oder `api`, falls NPM im selben Docker-Netz)
+   - Forward Hostname/IP: `atmros-api`  (bzw. `<server-ip>`)
    - Forward Port: `8000`
 
    Das erzeugt `location /api { proxy_pass http://…:8000; }` — der Pfad `/api`
@@ -94,7 +98,8 @@ die Karte leer.
 
 > Sicherheit: Die Ports 4321/8000 sollen nur über NPM erreichbar sein. Läuft NPM
 > auf demselben Host, per Firewall 4321/8000 von außen sperren — oder NPM und
-> atmrOS ins selbe Docker-Netz hängen und auf `web:4321` / `api:8000` forwarden.
+> atmrOS ins selbe Docker-Netz hängen und auf `atmros-web:4321` /
+> `atmros-api:8000` forwarden.
 
 ## 5. Einloggen
 

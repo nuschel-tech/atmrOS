@@ -10,6 +10,7 @@
 services:
   db:
     image: postgis/postgis:16-3.4
+    container_name: atmros-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-atmros}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atmros}
@@ -26,6 +27,7 @@ services:
 
   api:
     build: ./api
+    container_name: atmros-api
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
       # Single-Origin: API läuft unter atomar.org/api. Der Proxy leitet /api ->
@@ -43,6 +45,7 @@ services:
     restart: unless-stopped
 
   web:
+    container_name: atmros-web
     build:
       context: ./web
       args:
