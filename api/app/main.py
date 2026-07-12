@@ -14,22 +14,38 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .db import get_engine
+from .session import verify_session
 
 app = FastAPI(title="atmrOS API", version="0.1.0")
 
-# Frontend läuft in der Regel auf anderer Origin (Astro-Preview / hinter Proxy).
-_origins = os.environ.get("ATMROS_CORS_ORIGINS", "*").split(",")
+# Frontend läuft in der Regel auf anderer (aber same-site) Origin. Mit Cookies
+# braucht CORS explizite Origins + allow_credentials (kein "*" mit Credentials).
+_origins = os.environ.get("ATMROS_CORS_ORIGINS", "http://localhost:4321").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _origins],
+    allow_credentials=True,
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+_SESSION_COOKIE = "atmros_session"
+
+
+def require_session(request: Request) -> None:
+    """Gate — dasselbe Cookie wie das Web-Frontend. Nach dem Launch
+    (ATMROS_LAUNCHED=true) deaktiviert. /health bleibt ungeschützt, damit
+    Healthchecks immer durchkommen."""
+    if os.environ.get("ATMROS_LAUNCHED") == "true":
+        return
+    secret = os.environ.get("ATMROS_SESSION_SECRET", "")
+    if not verify_session(secret, request.cookies.get(_SESSION_COOKIE)):
+        raise HTTPException(status_code=401, detail="locked")
 
 _MVT_SQL = text(
     """
@@ -62,7 +78,7 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/tiles/{z}/{x}/{y}.pbf")
+@app.get("/tiles/{z}/{x}/{y}.pbf", dependencies=[Depends(require_session)])
 def tiles(z: int, x: int, y: int) -> Response:
     if not (0 <= z <= 24):
         raise HTTPException(400, "z out of range")
@@ -81,7 +97,7 @@ def tiles(z: int, x: int, y: int) -> Response:
     )
 
 
-@app.get("/object/{osm_type}/{osm_id}")
+@app.get("/object/{osm_type}/{osm_id}", dependencies=[Depends(require_session)])
 def object_detail(osm_type: str, osm_id: int) -> dict:
     if osm_type not in ("n", "w", "r"):
         raise HTTPException(400, "osm_type must be n, w or r")
@@ -137,7 +153,7 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
 _REFINED = ("substation", "tower", "mast")
 
 
-@app.get("/stats")
+@app.get("/stats", dependencies=[Depends(require_session)])
 def stats() -> dict:
     with get_engine().connect() as conn:
         by_cat = conn.execute(text(

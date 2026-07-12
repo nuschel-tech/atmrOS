@@ -1,0 +1,9 @@
+---
+// Sitzung beenden: Cookie löschen, zurück zur (dann gesperrten) Startseite.
+const COOKIE = "atmros_session";
+Astro.cookies.delete(COOKIE, {
+  path: "/",
+  ...(process.env.ATMROS_COOKIE_DOMAIN ? { domain: process.env.ATMROS_COOKIE_DOMAIN } : {}),
+});
+return Astro.redirect("/");
+---

@@ -59,6 +59,10 @@ export function initMap(): void {
     center: START_CENTER,
     zoom: START_ZOOM,
     attributionControl: { compact: true },
+    // Cookie an die (ggf. cross-origin, aber same-site) API mitschicken, damit
+    // die Vektor-Tiles hinter dem Gate geladen werden können.
+    transformRequest: (url) =>
+      url.startsWith(API_BASE) ? { url, credentials: "include" } : { url },
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
@@ -152,7 +156,7 @@ function applyFilters(): void {
 // --- Legende ----------------------------------------------------------------
 async function loadStats(): Promise<void> {
   try {
-    const res = await fetch(`${API_BASE}/stats`);
+    const res = await fetch(`${API_BASE}/stats`, { credentials: "include" });
     if (!res.ok) return;
     buildLegend((await res.json()) as StatsResponse);
   } catch {
@@ -266,7 +270,7 @@ async function openPanel(osmType: string, osmId: number): Promise<void> {
   head.innerHTML = "";
 
   try {
-    const res = await fetch(`${API_BASE}/object/${osmType}/${osmId}`);
+    const res = await fetch(`${API_BASE}/object/${osmType}/${osmId}`, { credentials: "include" });
     if (!res.ok) throw new Error(String(res.status));
     renderPanel(head, body, (await res.json()) as ObjectDetail);
   } catch {

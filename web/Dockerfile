@@ -16,5 +16,10 @@ ENV PUBLIC_API_BASE=$PUBLIC_API_BASE
 ENV PUBLIC_BASEMAP_STYLE=$PUBLIC_BASEMAP_STYLE
 RUN npm run build
 
+# SSR-Server (Node-Adapter, standalone). Die Gate-Secrets (ATMROS_LAUNCHED,
+# ATMROS_SESSION_SECRET, ATMROS_UNLOCK_PASSWORD_HASH) kommen zur LAUFZEIT aus
+# der Umgebung — Launch = env setzen + Container neu starten, kein Rebuild.
+ENV HOST=0.0.0.0
+ENV PORT=4321
 EXPOSE 4321
-CMD ["npm", "run", "preview", "--", "--host", "--port", "4321"]
+CMD ["node", "./dist/server/entry.mjs"]

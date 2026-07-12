@@ -1,0 +1,96 @@
+---
+// Terminal-Prompt zum Entsperren. GET zeigt das Formular, POST prüft das
+// Passwort gegen den bcrypt-Hash und setzt bei Erfolg das signierte Cookie.
+// Voll selbst-enthalten (inline styles) — im gesperrten Zustand erreichbar.
+import { verifyPassword } from "../lib/auth";
+import { signSession, verifySession } from "../lib/session";
+import { rateLimit, clientIp } from "../lib/ratelimit";
+
+const COOKIE = "atmros_session";
+const TTL_DAYS = 30;
+
+// Nach dem Launch ist das Gate aus — /unlock leitet zur App.
+if (process.env.ATMROS_LAUNCHED === "true") {
+  return Astro.redirect("/");
+}
+// Wer schon entsperrt ist, muss nicht erneut.
+const existing = Astro.cookies.get(COOKIE)?.value;
+if (existing && verifySession(process.env.ATMROS_SESSION_SECRET ?? "", existing)) {
+  return Astro.redirect("/");
+}
+
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const rl = rateLimit(clientIp(Astro.request));
+  if (!rl.ok) {
+    error = `Zu viele Versuche. Erneut in ${rl.retryMinutes} Min.`;
+  } else {
+    const form = await Astro.request.formData();
+    const password = String(form.get("pw") ?? "");
+    const hash = process.env.ATMROS_UNLOCK_PASSWORD_HASH ?? "";
+    const secret = process.env.ATMROS_SESSION_SECRET ?? "";
+    if (hash && secret && (await verifyPassword(password, hash))) {
+      Astro.cookies.set(COOKIE, signSession(secret, TTL_DAYS), {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: TTL_DAYS * 86400,
+        ...(process.env.ATMROS_COOKIE_DOMAIN ? { domain: process.env.ATMROS_COOKIE_DOMAIN } : {}),
+      });
+      return Astro.redirect("/");
+    }
+    error = "Zugriff verweigert.";
+  }
+}
+---
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>atmrOS · Zugang</title>
+<style is:inline>
+  :root{--pink:#e31c8d;--bg:#08090c;--bg2:#0e1116;--line:#20242d;--t0:#e8ecf2;--t1:#aab2bf;--t2:#5b6370;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--t0);font-family:var(--mono);
+    display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .term{width:min(440px,92vw);background:var(--bg2);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden}
+  .bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);
+    font-size:11px;letter-spacing:.14em;color:var(--t2)}
+  .bar .d{width:9px;height:9px;border-radius:50%;background:#2a2f39}
+  .bar .d.pink{background:var(--pink)}
+  .body{padding:20px 18px 22px}
+  .prompt{font-size:12.5px;color:var(--t1);margin:0 0 14px;line-height:1.7}
+  .prompt .p{color:var(--pink)}
+  form{display:flex;gap:8px}
+  input[type=password]{flex:1;background:#05060a;border:1px solid var(--line);border-radius:10px;
+    color:var(--t0);font-family:var(--mono);font-size:14px;padding:11px 12px;outline:none}
+  input[type=password]:focus{border-color:var(--pink)}
+  button{background:var(--pink);border:0;border-radius:10px;color:#0a0a0a;font-family:var(--mono);
+    font-weight:700;font-size:14px;padding:0 16px;cursor:pointer}
+  .err{margin:14px 0 0;font-size:12px;color:#ff6b8a;letter-spacing:.02em}
+  .hint{margin:16px 0 0;font-size:11px;color:var(--t2)}
+</style>
+</head>
+<body>
+  <div class="term">
+    <div class="bar"><span class="d pink"></span><span class="d"></span><span class="d"></span>
+      &nbsp;atmrOS · secure shell</div>
+    <div class="body">
+      <p class="prompt"><span class="p">auth@atmrOS</span>:~$ zugang anfordern<br />Passwort erforderlich.</p>
+      <form method="POST" autocomplete="off">
+        <input type="password" name="pw" placeholder="••••••••" autofocus aria-label="Passwort" />
+        <button type="submit">›</button>
+      </form>
+      {error && <p class="err">// {error}</p>}
+      <p class="hint">// Sitzung 30 Tage gültig.</p>
+    </div>
+  </div>
+</body>
+</html>

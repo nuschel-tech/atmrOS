@@ -28,7 +28,10 @@ services:
     build: ./api
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
-      ATMROS_CORS_ORIGINS: ${ATMROS_CORS_ORIGINS:-*}
+      ATMROS_CORS_ORIGINS: ${ATMROS_CORS_ORIGINS:-http://localhost:4321}
+      # Gate: identisches Cookie/Secret wie das Web-Frontend.
+      ATMROS_LAUNCHED: ${ATMROS_LAUNCHED:-false}
+      ATMROS_SESSION_SECRET: ${ATMROS_SESSION_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -42,6 +45,12 @@ services:
       args:
         PUBLIC_API_BASE: ${PUBLIC_API_BASE:-http://localhost:8000}
         PUBLIC_BASEMAP_STYLE: ${PUBLIC_BASEMAP_STYLE:-https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json}
+    environment:
+      # Gate-Secrets zur Laufzeit (Launch ohne Rebuild). false => Coming-soon.
+      ATMROS_LAUNCHED: ${ATMROS_LAUNCHED:-false}
+      ATMROS_SESSION_SECRET: ${ATMROS_SESSION_SECRET:-}
+      ATMROS_UNLOCK_PASSWORD_HASH: ${ATMROS_UNLOCK_PASSWORD_HASH:-}
+      ATMROS_COOKIE_DOMAIN: ${ATMROS_COOKIE_DOMAIN:-}
     depends_on:
       - api
     ports:
