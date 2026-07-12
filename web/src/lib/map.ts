@@ -4,8 +4,16 @@
 
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Protocol } from "pmtiles";
 
-import { API_BASE, BASEMAP_STYLE, START_CENTER, START_ZOOM } from "../config";
+import {
+  API_BASE,
+  BASEMAP_STYLE_URL,
+  GLYPHS_URL,
+  PMTILES_URL,
+  START_CENTER,
+  START_ZOOM,
+} from "../config";
 import {
   ACCENT,
   CATEGORIES,
@@ -52,10 +60,48 @@ let map: maplibregl.Map;
 
 const subKey = (cat: string, sub: string): string => `${cat}::${sub}`;
 
-export function initMap(): void {
+// Dunkler Notfall-Style, falls keine pmtiles-URL gesetzt ist oder das
+// Style-JSON nicht lädt — die Objekt-Punkte bleiben auf dunklem Grund sichtbar.
+function fallbackStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    sources: {},
+    layers: [{ id: "background", type: "background", paint: { "background-color": "#0a0c10" } }],
+  };
+}
+
+// Selbst gehostete Protomaps-Basemap laden und die pmtiles-/Glyph-URLs
+// injizieren. Ohne Glyphs werden Label-Layer entfernt (kein harter Fehler).
+async function loadBasemapStyle(): Promise<maplibregl.StyleSpecification> {
+  if (!PMTILES_URL) return fallbackStyle();
+  try {
+    const res = await fetch(BASEMAP_STYLE_URL);
+    if (!res.ok) return fallbackStyle();
+    const style = (await res.json()) as maplibregl.StyleSpecification & {
+      sources: Record<string, { url?: string }>;
+      glyphs?: string;
+    };
+    style.sources.protomaps.url = `pmtiles://${PMTILES_URL}`;
+    if (GLYPHS_URL) {
+      style.glyphs = GLYPHS_URL;
+    } else {
+      delete style.glyphs;
+      style.layers = style.layers.filter((l) => l.type !== "symbol");
+    }
+    return style;
+  } catch {
+    return fallbackStyle();
+  }
+}
+
+export async function initMap(): Promise<void> {
+  // pmtiles-Protokoll für MapLibre registrieren (Range-Requests auf die
+  // .pmtiles-Datei, z.B. auf BunnyCDN).
+  maplibregl.addProtocol("pmtiles", new Protocol().tile);
+
   map = new maplibregl.Map({
     container: "map",
-    style: BASEMAP_STYLE,
+    style: await loadBasemapStyle(),
     center: START_CENTER,
     zoom: START_ZOOM,
     attributionControl: { compact: true },

@@ -44,7 +44,9 @@ services:
       context: ./web
       args:
         PUBLIC_API_BASE: ${PUBLIC_API_BASE:-http://localhost:8000}
-        PUBLIC_BASEMAP_STYLE: ${PUBLIC_BASEMAP_STYLE:-https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json}
+        PUBLIC_BASEMAP_STYLE: ${PUBLIC_BASEMAP_STYLE:-/basemap/style.json}
+        PUBLIC_PMTILES_URL: ${PUBLIC_PMTILES_URL:-}
+        PUBLIC_GLYPHS_URL: ${PUBLIC_GLYPHS_URL:-}
     environment:
       # Gate-Secrets zur Laufzeit (Launch ohne Rebuild). false => Coming-soon.
       ATMROS_LAUNCHED: ${ATMROS_LAUNCHED:-false}

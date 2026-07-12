@@ -5,12 +5,18 @@
 export const API_BASE: string =
   import.meta.env.PUBLIC_API_BASE ?? "http://localhost:8000";
 
-// Basemap-Style. Platzhalter: CARTO dark-matter (dunkel, kein Token nötig).
-// Zum Selbst-Hosten später schlicht PUBLIC_BASEMAP_STYLE auf die eigene
-// style.json (z.B. auf BunnyCDN) setzen — hier ändert sich nichts.
-export const BASEMAP_STYLE: string =
-  import.meta.env.PUBLIC_BASEMAP_STYLE ??
-  "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
+// Basemap-Style-JSON. Selbst gehostet im Repo (web/public/basemap/style.json),
+// dunkel/entsättigt/minimal. map.ts injiziert die pmtiles- und Glyph-URLs.
+export const BASEMAP_STYLE_URL: string =
+  import.meta.env.PUBLIC_BASEMAP_STYLE ?? "/basemap/style.json";
+
+// Selbst gehostete Protomaps-Basemap als .pmtiles (z.B. auf BunnyCDN).
+// Leer => nur dunkler Hintergrund (Punkte bleiben sichtbar). Siehe docs/BASEMAP.md.
+export const PMTILES_URL: string = import.meta.env.PUBLIC_PMTILES_URL ?? "";
+
+// Glyphs (Schrift-Stacks als .pbf) fürs Beschriften — ebenfalls selbst gehostet.
+// Leer => Karte rendert ohne Labels (kein harter Fehler).
+export const GLYPHS_URL: string = import.meta.env.PUBLIC_GLYPHS_URL ?? "";
 
 // Startausschnitt: Bayern.
 export const START_CENTER: [number, number] = [11.4, 48.9];

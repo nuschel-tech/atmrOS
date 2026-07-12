@@ -26,5 +26,5 @@ import "../styles/theme.css";
 
 <script>
   import { initMap } from "../lib/map";
-  initMap();
+  initMap().catch((e) => console.error("atmrOS map init failed", e));
 </script>

@@ -19,5 +19,8 @@ data/
 *.parquet
 manifest.jsonl
 
+# Basemap-Kacheln (liegen auf BunnyCDN, nicht im Repo) — style.json bleibt drin
+*.pmtiles
+
 # OS
 .DS_Store
