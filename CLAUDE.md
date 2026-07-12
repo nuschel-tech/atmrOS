@@ -121,7 +121,8 @@ diesem Umfeld erprobt und stabil sind.
 - **Orchestrierung:** simples Python-Script + **systemd-Timer** auf dem Hetzner
   (kein Airflow o.ä. — Overkill; die Kette soll simpel und lückenlos sein, nicht fancy)
 - **Rohdaten-Archiv:** jedes Tages-PBF-Extrakt der gefilterten Objekte als
-  komprimiertes GeoParquet ablegen + SHA-256 in `manifest.jsonl` (Beweis-Kette,
+  komprimiertes Parquet ablegen (lon/lat als float64-Spalten, reines pyarrow —
+  keine geopandas/GDAL-Kette) + SHA-256 in `manifest.jsonl` (Beweis-Kette,
   unveränderlich). Nur die gefilterten Objekte, nicht das 806-MB-Vollextrakt behalten.
 
 ### Datenbank

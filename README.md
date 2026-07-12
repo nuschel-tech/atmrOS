@@ -12,7 +12,7 @@ Dies ist **Schritt 1**: die Kette einmal sichtbar durchlaufen —
 
 ```
 pipeline/  SAMMELN + FILTERN + ROHLAGER + SPEICHERN
-           Bayern-PBF -> pyosmium-Filter -> GeoParquet+Hash -> PostGIS
+           Bayern-PBF -> osmium-Filter -> Parquet+Hash -> PostGIS
 db/        Kernschema (object / observation / change_event)
 api/       FastAPI: Vektor-Tiles (ST_AsMVT) + /object-Panel + /stats
 web/       Astro + MapLibre: dunkle Karte, Klick -> Profiler-Panel mit Quelle
@@ -74,7 +74,7 @@ Alles über `.env` (siehe `.env.example`). Wichtige Schalter:
 
 1. **Systeme messen, nie Menschen** — nur Infrastruktur-Objekte, keine Personendaten.
 2. **Jede Anzeige trägt Quelle + Stand-Datum** — prominent im Panel, plus OSM-Deep-Link.
-3. **Rohlager unantastbar** — jeder Lauf schreibt GeoParquet + SHA-256 in
+3. **Rohlager unantastbar** — jeder Lauf schreibt Parquet + SHA-256 in
    `manifest.jsonl`; bestehende Dateien werden nie überschrieben.
 4. **Lückenlosigkeit vor Features** — der Ingest schreibt in *einer* Transaktion;
    bei Fehler Exit-Code ≠ 0, nie halb-fertig stillschweigend committen.
