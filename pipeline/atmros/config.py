@@ -40,12 +40,17 @@ CATEGORIES: list[str] = [cat for _, cat in CATEGORY_RULES]
 _RELEVANT_KEYS = {key for (key, _), _ in CATEGORY_RULES}
 
 
-def classify(tags: dict[str, str]) -> str | None:
-    """Ordnet ein OSM-Tag-Set einer atmrOS-Kategorie zu, sonst None."""
-    if not tags:
+def classify(tags) -> str | None:
+    """Ordnet ein OSM-Tag-Set einer atmrOS-Kategorie zu, sonst None.
+
+    `tags` ist ein osmium.osm.TagList (kein dict!). Die 4.x-API bietet nur
+    get(), __contains__ und __len__ — deshalb Membership via `key in tags`
+    statt .keys()/.isdisjoint(). Funktioniert auch mit einem echten dict.
+    """
+    if not len(tags):
         return None
-    # Billiger Ausschluss zuerst.
-    if _RELEVANT_KEYS.isdisjoint(tags.keys()):
+    # Billiger Ausschluss zuerst — nutzt __contains__ und schließt kurz.
+    if not any(key in tags for key in _RELEVANT_KEYS):
         return None
     for (key, value), category in CATEGORY_RULES:
         if tags.get(key) == value:
