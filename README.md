@@ -26,9 +26,13 @@ docker compose up -d db api web
 docker compose run --rm ingest        # einmal die Kette laufen lassen
 ```
 
-Dann `http://localhost:4321` öffnen: dunkle Karte Bayerns, Infrastruktur als
-Punkte, **Klick auf ein Objekt → Panel mit Attributen + Quelle + Stand-Datum.**
-Das ist das Erfolgskriterium aus `CLAUDE.md`.
+Dann `http://localhost:4321` öffnen. **Achtung:** standardmäßig ist das
+Login-Gate aktiv (`ATMROS_LAUNCHED=false`) — du siehst die **Coming-soon-Seite**.
+Zum Entsperren `ATMROS_SESSION_SECRET` und `ATMROS_UNLOCK_PASSWORD_HASH` in `.env`
+setzen (siehe `.env.example`) und `/unlock` mit dem Passwort aufrufen. Danach:
+dunkle Karte Bayerns, Infrastruktur als Punkte, **Klick auf ein Objekt → Panel
+mit Attributen + Quelle + Stand-Datum.** Das ist das Erfolgskriterium aus
+`CLAUDE.md`. Launch-Tag: `ATMROS_LAUNCHED=true` + Container neu starten.
 
 > Der `ingest`-Lauf lädt das ~806 MB Bayern-PBF und braucht beim ersten Mal
 > einige Minuten (Download + Parse + Schreiben). Fortschritt im Log:
@@ -40,8 +44,11 @@ Das ist das Erfolgskriterium aus `CLAUDE.md`.
 |----------|-------|
 | `GET /tiles/{z}/{x}/{y}.pbf` | Mapbox Vector Tile via `ST_AsMVT` |
 | `GET /object/{osm_type}/{osm_id}` | Panel-Daten inkl. Historie + Quelle |
-| `GET /stats` | Counts pro Kategorie (füllt die Legende) |
-| `GET /health` | Liveness |
+| `GET /stats` | Counts pro Kategorie **und Untertyp** (füllt die Legende) |
+| `GET /health` | Liveness (immer offen) |
+
+Alle Endpunkte außer `/health` sind hinter demselben Cookie-Gate wie das
+Frontend (deaktiviert, sobald `ATMROS_LAUNCHED=true`).
 
 ## Datenmodell (ein Modell, drei Ansichten)
 
@@ -52,12 +59,16 @@ Dubletten. Daraus fallen später Live / Archiv / Änderungen aus *einer* Tabelle
 
 ## Konfiguration
 
-Alles über `.env` (siehe `.env.example`). Zwei bewusst gekapselte Schalter:
+Alles über `.env` (siehe `.env.example`). Wichtige Schalter:
 
 - **`PUBLIC_API_BASE`** — öffentliche API-URL für den Browser (Build-Zeit).
-- **`PUBLIC_BASEMAP_STYLE`** — Basemap. Platzhalter: CARTO dark-matter (kein
-  Token nötig). Zum Selbst-Hosten später schlicht auf die eigene `style.json`
-  (z.B. BunnyCDN) zeigen — kein Code ändert sich.
+- **Basemap** — selbst gehostete Protomaps-Kacheln über `PUBLIC_PMTILES_URL`
+  (+ `PUBLIC_GLYPHS_URL`), Style im Repo unter `web/public/basemap/style.json`.
+  Anleitung zum Erzeugen/Hochladen: [`docs/BASEMAP.md`](./docs/BASEMAP.md).
+- **Login-Gate** — `ATMROS_LAUNCHED`, `ATMROS_UNLOCK_PASSWORD_HASH` (bcrypt),
+  `ATMROS_SESSION_SECRET` (gleich für web **und** api). Details in `.env.example`.
+- **Node-Index** — `ATMROS_OSM_INDEX` (Default `sparse_file_array`, RAM-schonend;
+  `flex_mem` schneller, aber ~2,1 GB für Bayern).
 
 ## Grundregeln (aus CLAUDE.md, hier umgesetzt)
 
@@ -85,7 +96,11 @@ cd web && npm install && npm run dev
 
 ## Status & nächster Schritt
 
-**Schritt 1 (dies):** Kette lauffähig, Karte + Panel mit Quelle. ✅
+**Schritt 1:** Kette lauffähig, Karte + Panel mit Quelle. ✅ (real gegen das
+volle Bayern-PBF verifiziert: 94.780 Objekte)
+**Nachgezogen:** osmium-4.x-Fix, RAM-schonender Node-Index, Untertyp-Erfassung
+(Ehrlichkeit: Kirchturm ≠ Sendemast), Login-Gate (Coming-soon bis Launch),
+selbst gehostete Basemap. ✅
 **Schritt 2:** systemd-Timer (Nightly-Ingest) + Diff-Logik (`change_event`:
 NEW/CHANGED/DELETED/RESTORED) + Archiv-/Änderungsansicht. Das Schema dafür
-steht bereits (`change_event`), die Tabelle ist in Schritt 1 nur noch leer.
+steht bereits (`change_event`), die Tabelle ist noch leer.
