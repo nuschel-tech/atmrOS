@@ -1,8 +1,14 @@
 """ROHLAGER — Grundregel 3: einmal geschrieben, nie verändert.
 
-Jeder Lauf legt die gefilterten Objekte als komprimiertes GeoParquet ab und
-hängt eine Zeile mit SHA-256 an manifest.jsonl (Beweis-Kette). Nur die
-gefilterten Objekte, nicht das 806-MB-Vollextrakt.
+Jeder Lauf legt die gefilterten Objekte als komprimiertes Parquet ab und hängt
+eine Zeile mit SHA-256 an manifest.jsonl (Beweis-Kette). Nur die gefilterten
+Objekte, nicht das ~806-MB-Vollextrakt.
+
+Bewusst NUR pyarrow — keine geopandas/GDAL/PROJ/Fiona-Kette: unsere Objekte sind
+lon/lat-Punkte, für die zwei float64-Spalten genügen. Ein explizit
+festgeschriebenes pa.schema() hält die Archivdatei über Jahre stabil lesbar.
+attrs werden über config.canonical_attrs serialisiert — bitgleich zu dem, worüber
+db.attr_hash gebildet wird, damit Archiv und DB direkt gegeneinander prüfbar sind.
 """
 
 from __future__ import annotations
@@ -12,9 +18,22 @@ import json
 import os
 from datetime import datetime, timezone
 
-import geopandas as gpd
-import pandas as pd
-from shapely.geometry import Point
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from .config import canonical_attrs
+
+# Explizit eingefrorenes Schema. Reihenfolge/Typen NICHT ändern — sonst wird die
+# Beweis-Kette über die Zeit inkonsistent.
+_SCHEMA = pa.schema([
+    ("osm_type", pa.string()),
+    ("osm_id", pa.int64()),
+    ("category", pa.string()),
+    ("subtype", pa.string()),   # nullable
+    ("lon", pa.float64()),
+    ("lat", pa.float64()),
+    ("attrs", pa.string()),     # kanonisches JSON, s.o.
+])
 
 
 def _sha256_file(path: str) -> str:
@@ -27,38 +46,41 @@ def _sha256_file(path: str) -> str:
 
 def write_archive(records: list[dict], observed_at: datetime,
                   source: str, source_url: str, archive_dir: str) -> dict:
-    """Schreibt GeoParquet + Manifest-Zeile. Gibt die Manifest-Zeile zurück.
+    """Schreibt Parquet + Manifest-Zeile. Gibt die Manifest-Zeile zurück.
 
-    Dateiname trägt das Stand-Datum, damit die Kette lesbar ist. Existiert die
-    Datei schon (erneuter Lauf desselben Extrakts), wird sie NICHT überschrieben
-    — das Rohlager ist unantastbar.
+    Dateiname trägt das Stand-Datum. Existiert die Datei schon (erneuter Lauf
+    desselben Extrakts), wird sie NICHT überschrieben — das Rohlager ist
+    unantastbar. Geschrieben wird erst nach *.part, dann os.replace() — ein
+    abgebrochener Lauf hinterlässt nie eine halbe Datei im Rohlager.
     """
     os.makedirs(archive_dir, exist_ok=True)
     stamp = observed_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    parquet_path = os.path.join(archive_dir, f"osm-geofabrik-bayern-{stamp}.parquet")
+    path = os.path.join(archive_dir, f"osm-geofabrik-bayern-{stamp}.parquet")
 
-    if os.path.exists(parquet_path):
-        # Unantastbar: bestehende Datei bleibt, wir referenzieren sie nur.
-        sha = _sha256_file(parquet_path)
-        return _manifest_entry(parquet_path, sha, len(records), observed_at,
+    if os.path.exists(path):
+        sha = _sha256_file(path)
+        return _manifest_entry(path, sha, len(records), observed_at,
                                source, source_url, note="already-present")
 
-    frame = pd.DataFrame.from_records([
+    table = pa.table(
         {
-            "osm_type": r["osm_type"],
-            "osm_id": r["osm_id"],
-            "category": r["category"],
-            "attrs": json.dumps(r["attrs"], ensure_ascii=False, sort_keys=True),
-        }
-        for r in records
-    ])
-    geometry = [Point(r["lon"], r["lat"]) for r in records]
-    gdf = gpd.GeoDataFrame(frame, geometry=geometry, crs="EPSG:4326")
-    gdf.to_parquet(parquet_path, compression="zstd", index=False)
+            "osm_type": [r["osm_type"] for r in records],
+            "osm_id": [r["osm_id"] for r in records],
+            "category": [r["category"] for r in records],
+            "subtype": [r.get("subtype") for r in records],
+            "lon": [float(r["lon"]) for r in records],
+            "lat": [float(r["lat"]) for r in records],
+            "attrs": [canonical_attrs(r["attrs"]) for r in records],
+        },
+        schema=_SCHEMA,
+    )
 
-    sha = _sha256_file(parquet_path)
-    entry = _manifest_entry(parquet_path, sha, len(records), observed_at,
-                            source, source_url)
+    part = path + ".part"
+    pq.write_table(table, part, compression="zstd")
+    os.replace(part, path)  # atomar: entweder ganze Datei oder keine
+
+    sha = _sha256_file(path)
+    entry = _manifest_entry(path, sha, len(records), observed_at, source, source_url)
     manifest_path = os.path.join(archive_dir, "manifest.jsonl")
     with open(manifest_path, "a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")

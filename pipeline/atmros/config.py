@@ -6,7 +6,16 @@ sowohl vom Ingest als auch (konzeptionell) von der API geteilt.
 
 from __future__ import annotations
 
+import json
 import os
+
+
+def canonical_attrs(attrs: dict) -> str:
+    """Kanonisches JSON der Tags — DIE eine Quelle der Wahrheit für die
+    Serialisierung. Sowohl der attr_hash (db.attr_hash) als auch das Rohlager
+    (archive) serialisieren hierüber, damit Archiv und DB bitgleich und direkt
+    gegeneinander prüfbar sind. Reihenfolge/Trennzeichen NICHT ändern."""
+    return json.dumps(attrs, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 # --- Hauptquelle: Geofabrik Bayern-Extrakt (verifiziert, täglich frisch) -----
 GEOFABRIK_PBF_URL = os.environ.get(

@@ -4,7 +4,5 @@
 osmium>=4.3,<5
 SQLAlchemy>=2.0,<3
 psycopg[binary]>=3.1,<4
-geopandas>=0.14
 pyarrow>=15
-shapely>=2.0
 requests>=2.31

@@ -14,6 +14,8 @@ import json
 from datetime import datetime
 
 from sqlalchemy import create_engine, text
+
+from .config import canonical_attrs
 from sqlalchemy.engine import Engine
 
 _CHUNK = 5000
@@ -35,10 +37,9 @@ def ensure_schema(engine: Engine) -> None:
 
 
 def attr_hash(attrs: dict[str, str]) -> str:
-    """Stabiler Hash über die Tags — kanonisches JSON (sortiert, kompakt)."""
-    canonical = json.dumps(attrs, sort_keys=True, ensure_ascii=False,
-                           separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """Stabiler Hash über die Tags — kanonisches JSON (sortiert, kompakt).
+    Serialisierung über config.canonical_attrs (dieselbe wie im Rohlager)."""
+    return hashlib.sha256(canonical_attrs(attrs).encode("utf-8")).hexdigest()
 
 
 def _chunks(seq: list, size: int):

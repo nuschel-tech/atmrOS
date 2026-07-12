@@ -100,8 +100,8 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
             return {"objects": len(records), "counts": handler.counts,
                     "sample_geojson": out}
 
-        # --- ROHLAGER: unantastbares GeoParquet + Hash-Manifest ---------------
-        from . import archive  # lazy: geopandas erst laden, wenn wirklich nötig
+        # --- ROHLAGER: unantastbares Parquet + Hash-Manifest ------------------
+        from . import archive  # lazy: pyarrow erst laden, wenn wirklich nötig
         manifest = archive.write_archive(
             records, observed_at, config.SOURCE, source_url, config.ARCHIVE_DIR)
         log.info("Rohlager: %s (sha256=%s…, %d Objekte)",

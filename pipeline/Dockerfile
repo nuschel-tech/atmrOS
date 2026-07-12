@@ -3,10 +3,10 @@
 # gestartet. Schritt 2 hängt das an einen systemd-Timer auf dem Host.
 FROM python:3.12-slim
 
-# geopandas/shapely/pyproj brauchen GEOS/PROJ zur Laufzeit; pyosmium baut gegen
-# libexpat/zlib. Slim-Image daher gezielt ergänzen.
+# osmium-Wheel braucht libexpat/zlib zur Laufzeit. Keine GEOS/PROJ/GDAL-Kette
+# mehr (Rohlager schreibt reines pyarrow-Parquet, kein geopandas).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libexpat1 zlib1g libgeos-c1v5 libproj25 \
+        libexpat1 zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
