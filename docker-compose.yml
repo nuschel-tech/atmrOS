@@ -28,7 +28,10 @@ services:
     build: ./api
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
-      ATMROS_CORS_ORIGINS: ${ATMROS_CORS_ORIGINS:-http://localhost:4321}
+      # Single-Origin: API läuft unter atomar.org/api. Der Proxy leitet /api ->
+      # api:8000 durch (ohne Strippen), die Routen liegen daher unter /api.
+      ATMROS_API_ROOT_PATH: ${ATMROS_API_ROOT_PATH:-/api}
+      ATMROS_CORS_ORIGINS: ${ATMROS_CORS_ORIGINS:-https://atomar.org}
       # Gate: identisches Cookie/Secret wie das Web-Frontend.
       ATMROS_LAUNCHED: ${ATMROS_LAUNCHED:-false}
       ATMROS_SESSION_SECRET: ${ATMROS_SESSION_SECRET:-}
@@ -43,10 +46,10 @@ services:
     build:
       context: ./web
       args:
-        PUBLIC_API_BASE: ${PUBLIC_API_BASE:-http://localhost:8000}
+        PUBLIC_API_BASE: ${PUBLIC_API_BASE:-https://atomar.org/api}
         PUBLIC_BASEMAP_STYLE: ${PUBLIC_BASEMAP_STYLE:-/basemap/style.json}
-        PUBLIC_PMTILES_URL: ${PUBLIC_PMTILES_URL:-}
-        PUBLIC_GLYPHS_URL: ${PUBLIC_GLYPHS_URL:-}
+        PUBLIC_PMTILES_URL: ${PUBLIC_PMTILES_URL:-https://static.multaenhavo.com/atmros/basemap/bayern-basemap.pmtiles}
+        PUBLIC_GLYPHS_URL: ${PUBLIC_GLYPHS_URL:-https://static.multaenhavo.com/atmros/fonts/{fontstack}/{range}.pbf}
     environment:
       # Gate-Secrets zur Laufzeit (Launch ohne Rebuild). false => Coming-soon.
       ATMROS_LAUNCHED: ${ATMROS_LAUNCHED:-false}

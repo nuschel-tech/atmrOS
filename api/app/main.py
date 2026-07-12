@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -22,6 +22,12 @@ from .db import get_engine
 from .session import verify_session
 
 app = FastAPI(title="atmrOS API", version="0.1.0")
+
+# Alle Endpunkte laufen unter diesem Pfad-Präfix. Für Single-Origin-Deployment
+# (alles unter atomar.org) auf "/api" setzen; der Reverse-Proxy leitet
+# atomar.org/api -> Container weiter, ohne den Pfad zu strippen. Leer = Root.
+_ROOT_PATH = os.environ.get("ATMROS_API_ROOT_PATH", "").rstrip("/")
+router = APIRouter()
 
 # Frontend läuft in der Regel auf anderer (aber same-site) Origin. Mit Cookies
 # braucht CORS explizite Origins + allow_credentials (kein "*" mit Credentials).
@@ -71,14 +77,14 @@ _MVT_SQL = text(
 )
 
 
-@app.get("/health")
+@router.get("/health")
 def health() -> dict:
     with get_engine().connect() as conn:
         conn.execute(text("SELECT 1"))
     return {"status": "ok"}
 
 
-@app.get("/tiles/{z}/{x}/{y}.pbf", dependencies=[Depends(require_session)])
+@router.get("/tiles/{z}/{x}/{y}.pbf", dependencies=[Depends(require_session)])
 def tiles(z: int, x: int, y: int) -> Response:
     if not (0 <= z <= 24):
         raise HTTPException(400, "z out of range")
@@ -97,7 +103,7 @@ def tiles(z: int, x: int, y: int) -> Response:
     )
 
 
-@app.get("/object/{osm_type}/{osm_id}", dependencies=[Depends(require_session)])
+@router.get("/object/{osm_type}/{osm_id}", dependencies=[Depends(require_session)])
 def object_detail(osm_type: str, osm_id: int) -> dict:
     if osm_type not in ("n", "w", "r"):
         raise HTTPException(400, "osm_type must be n, w or r")
@@ -153,7 +159,7 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
 _REFINED = ("substation", "tower", "mast")
 
 
-@app.get("/stats", dependencies=[Depends(require_session)])
+@router.get("/stats", dependencies=[Depends(require_session)])
 def stats() -> dict:
     with get_engine().connect() as conn:
         by_cat = conn.execute(text(
@@ -191,3 +197,7 @@ _OSM_TYPE_LONG = {"n": "node", "w": "way", "r": "relation"}
 
 def _osm_url(osm_type: str, osm_id: int) -> str:
     return f"https://www.openstreetmap.org/{_OSM_TYPE_LONG[osm_type]}/{osm_id}"
+
+
+# Routen unter dem Präfix einhängen (leer = Root, "/api" = Single-Origin).
+app.include_router(router, prefix=_ROOT_PATH)
