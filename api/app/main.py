@@ -43,7 +43,8 @@ _MVT_SQL = text(
                          extent => 4096, buffer => 64) AS geom,
             o.osm_type,
             o.osm_id,
-            o.category
+            o.category,
+            o.subtype
         FROM object o, bounds
         WHERE o.geom && bounds.b4326
     )
@@ -89,7 +90,7 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
     with engine.connect() as conn:
         obj = conn.execute(text(
             """
-            SELECT osm_type, osm_id, category, first_seen, last_seen,
+            SELECT osm_type, osm_id, category, subtype, first_seen, last_seen,
                    ST_Y(geom) AS lat, ST_X(geom) AS lon
             FROM object WHERE osm_type = :t AND osm_id = :i
             """
@@ -111,6 +112,7 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
         "osm_type": obj.osm_type,
         "osm_id": obj.osm_id,
         "category": obj.category,
+        "subtype": obj.subtype,
         "first_seen": obj.first_seen.isoformat(),
         "last_seen": obj.last_seen.isoformat(),
         "lon": obj.lon,
@@ -131,18 +133,39 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
     }
 
 
+# Kategorien mit Untertyp-Verfeinerung (zu grob ohne subtype).
+_REFINED = ("substation", "tower", "mast")
+
+
 @app.get("/stats")
 def stats() -> dict:
     with get_engine().connect() as conn:
         by_cat = conn.execute(text(
             "SELECT category, count(*) AS n FROM object GROUP BY category ORDER BY n DESC"
         )).all()
+        by_sub = conn.execute(text(
+            """
+            SELECT category, subtype, count(*) AS n
+            FROM object
+            WHERE category = ANY(:cats)
+            GROUP BY category, subtype
+            ORDER BY n DESC
+            """
+        ), {"cats": list(_REFINED)}).all()
         latest = conn.execute(text(
             "SELECT max(observed_at) AS m FROM observation"
         )).first()
+
+    by_subtype: dict[str, dict[str, int]] = {}
+    for r in by_sub:
+        # NULL -> "(ohne Angabe)": ehrlich sichtbar, nicht verschluckt.
+        key = r.subtype if r.subtype is not None else "(ohne Angabe)"
+        by_subtype.setdefault(r.category, {})[key] = r.n
+
     return {
         "total": sum(r.n for r in by_cat),
         "by_category": {r.category: r.n for r in by_cat},
+        "by_subtype": by_subtype,
         "latest_observed_at": latest.m.isoformat() if latest and latest.m else None,
     }
 

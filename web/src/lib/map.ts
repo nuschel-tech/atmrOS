@@ -1,5 +1,6 @@
 // ZEIGEN — dunkle MapLibre-Karte, Objekt-Layer aus den atmrOS-Vektor-Tiles,
-// Klick -> Profiler-Panel mit Attributen + Quelle.
+// Klick -> Profiler-Panel mit Attributen + Quelle. Legende mit Kategorie- und
+// Untertyp-Filtern (Ehrlichkeit: Kirchturm != Sendemast).
 
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -9,19 +10,30 @@ import {
   ACCENT,
   CATEGORIES,
   CATEGORY_BY_ID,
+  NO_SUBTYPE,
+  REFINED,
   categoryColorExpression,
+  subtypeLabel,
 } from "./categories";
 
 const SRC = "atmros-infra";
 const LAYER = "infra-points";
 const LAYER_SEL = "infra-selected";
 
+interface StatsResponse {
+  by_category: Record<string, number>;
+  by_subtype: Record<string, Record<string, number>>;
+}
+
 interface ObjectDetail {
   osm_type: string;
   osm_id: number;
   category: string;
+  subtype: string | null;
   first_seen: string;
   last_seen: string;
+  lon: number;
+  lat: number;
   osm_url: string;
   current: {
     observed_at: string;
@@ -32,8 +44,16 @@ interface ObjectDetail {
   history: { observed_at: string; attr_hash: string; source: string }[];
 }
 
+// --- Filter-Zustand ---------------------------------------------------------
+const hiddenCategories = new Set<string>();
+const hiddenSubtypes = new Set<string>(); // Schlüssel: `${category}::${subVal}`
+let selected: { type: string; id: number } | null = null;
+let map: maplibregl.Map;
+
+const subKey = (cat: string, sub: string): string => `${cat}::${sub}`;
+
 export function initMap(): void {
-  const map = new maplibregl.Map({
+  map = new maplibregl.Map({
     container: "map",
     style: BASEMAP_STYLE,
     center: START_CENTER,
@@ -57,17 +77,13 @@ export function initMap(): void {
       "source-layer": "infra",
       paint: {
         "circle-color": categoryColorExpression() as maplibregl.DataDrivenPropertyValueSpecification<string>,
-        "circle-radius": [
-          "interpolate", ["linear"], ["zoom"],
-          6, 1.6, 10, 3, 14, 5,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.6, 10, 3, 14, 5],
         "circle-opacity": 0.85,
         "circle-stroke-width": 0.4,
         "circle-stroke-color": "#000000",
       },
     });
 
-    // Auswahl-Highlight (Pink = echte Auffälligkeit, hier: aktives Objekt).
     map.addLayer({
       id: LAYER_SEL,
       type: "circle",
@@ -75,9 +91,7 @@ export function initMap(): void {
       "source-layer": "infra",
       filter: ["==", ["get", "osm_id"], -1],
       paint: {
-        "circle-radius": [
-          "interpolate", ["linear"], ["zoom"], 6, 4, 10, 7, 14, 10,
-        ],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 4, 10, 7, 14, 10],
         "circle-color": ACCENT,
         "circle-opacity": 0.25,
         "circle-stroke-width": 1.6,
@@ -88,46 +102,159 @@ export function initMap(): void {
     map.on("click", LAYER, (e) => {
       const f = e.features?.[0];
       if (!f) return;
-      const osmType = String(f.properties?.osm_type);
-      const osmId = Number(f.properties?.osm_id);
-      map.setFilter(LAYER_SEL, [
-        "all",
-        ["==", ["get", "osm_type"], osmType],
-        ["==", ["get", "osm_id"], osmId],
-      ]);
-      void openPanel(osmType, osmId);
+      selected = { type: String(f.properties?.osm_type), id: Number(f.properties?.osm_id) };
+      applyFilters();
+      void openPanel(selected.type, selected.id);
     });
-
     map.on("mouseenter", LAYER, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", LAYER, () => (map.getCanvas().style.cursor = ""));
 
+    applyFilters();
     void loadStats();
   });
 
-  wireCloseButton(map);
-}
-
-function wireCloseButton(map: maplibregl.Map): void {
   document.getElementById("panel-close")?.addEventListener("click", () => {
     document.getElementById("panel")?.classList.remove("open");
-    map.setFilter(LAYER_SEL, ["==", ["get", "osm_id"], -1]);
+    selected = null;
+    applyFilters();
   });
+
+  wireLegend();
 }
 
+// --- Filter -----------------------------------------------------------------
+function baseFilter(): maplibregl.FilterSpecification {
+  // Untertyp pro Feature (fehlend -> NO_SUBTYPE), als Komposit-Schlüssel.
+  const subVal: unknown = ["case", ["has", "subtype"], ["to-string", ["get", "subtype"]], NO_SUBTYPE];
+  const composite: unknown = ["concat", ["to-string", ["get", "category"]], "::", subVal];
+  return [
+    "all",
+    ["!", ["in", ["get", "category"], ["literal", [...hiddenCategories]]]],
+    ["!", ["in", composite, ["literal", [...hiddenSubtypes]]]],
+  ] as unknown as maplibregl.FilterSpecification;
+}
+
+function applyFilters(): void {
+  const base = baseFilter();
+  map.setFilter(LAYER, base);
+  if (selected) {
+    map.setFilter(LAYER_SEL, [
+      "all",
+      base as unknown,
+      ["==", ["get", "osm_type"], selected.type],
+      ["==", ["get", "osm_id"], selected.id],
+    ] as unknown as maplibregl.FilterSpecification);
+  } else {
+    map.setFilter(LAYER_SEL, ["==", ["get", "osm_id"], -1]);
+  }
+}
+
+// --- Legende ----------------------------------------------------------------
 async function loadStats(): Promise<void> {
   try {
     const res = await fetch(`${API_BASE}/stats`);
     if (!res.ok) return;
-    const data = (await res.json()) as { by_category: Record<string, number> };
-    for (const c of CATEGORIES) {
-      const el = document.querySelector(`[data-count="${c.id}"]`);
-      if (el) el.textContent = (data.by_category[c.id] ?? 0).toLocaleString("de-DE");
-    }
+    buildLegend((await res.json()) as StatsResponse);
   } catch {
-    /* Legende bleibt ohne Zahlen — kein harter Fehler. */
+    /* Legende bleibt leer — kein harter Fehler. */
   }
 }
 
+function buildLegend(stats: StatsResponse): void {
+  const host = document.getElementById("legend-body");
+  if (!host) return;
+  const de = (n: number): string => n.toLocaleString("de-DE");
+  const rows: string[] = [];
+
+  for (const c of CATEGORIES) {
+    const total = stats.by_category[c.id] ?? 0;
+    rows.push(
+      `<div class="lg-cat" data-cat="${c.id}" role="button" tabindex="0">
+         <span class="dot" style="background:${c.color}"></span>
+         <span class="lbl">${c.label}</span>
+         <span class="count">${de(total)}</span>
+       </div>`,
+    );
+
+    // Untertyp-Unterzeilen nur für die zu groben Kategorien. Echte Daten haben
+    // einen langen Freitext-Schwanz (tower: ~74 Werte) — daher Top-N + Sammel-
+    // zeile "andere", die den Rest gemeinsam filterbar hält.
+    const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
+    if (subs) {
+      const ordered = Object.entries(subs).sort((a, b) => b[1] - a[1]);
+      const TOP = 8;
+      for (const [sub, n] of ordered.slice(0, TOP)) {
+        const label = sub === NO_SUBTYPE ? NO_SUBTYPE : subtypeLabel(sub);
+        rows.push(
+          `<div class="lg-sub" data-cat="${c.id}" data-sub="${escapeAttr(sub)}" role="button" tabindex="0">
+             <span class="lbl">${escapeHtml(label)}</span>
+             <span class="count">${de(n)}</span>
+           </div>`,
+        );
+      }
+      const rest = ordered.slice(TOP);
+      if (rest.length) {
+        const restVals = JSON.stringify(rest.map(([s]) => s));
+        const restCount = rest.reduce((acc, [, n]) => acc + n, 0);
+        rows.push(
+          `<div class="lg-sub lg-rest" data-cat="${c.id}" data-subs="${escapeAttr(restVals)}" role="button" tabindex="0">
+             <span class="lbl">andere (${rest.length} Typen)</span>
+             <span class="count">${de(restCount)}</span>
+           </div>`,
+        );
+      }
+    }
+  }
+  host.innerHTML = rows.join("");
+}
+
+function wireLegend(): void {
+  const host = document.getElementById("legend-body");
+  if (!host) return;
+  const onActivate = (target: HTMLElement): void => {
+    const catRow = target.closest<HTMLElement>(".lg-cat");
+    const subRow = target.closest<HTMLElement>(".lg-sub");
+    if (subRow) {
+      const cat = subRow.dataset.cat!;
+      if (subRow.dataset.subs) {
+        // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
+        const vals = JSON.parse(subRow.dataset.subs) as string[];
+        const turningOff = !subRow.classList.contains("off");
+        for (const v of vals) {
+          const key = subKey(cat, v);
+          if (turningOff) hiddenSubtypes.add(key);
+          else hiddenSubtypes.delete(key);
+        }
+        subRow.classList.toggle("off", turningOff);
+      } else {
+        toggle(hiddenSubtypes, subKey(cat, subRow.dataset.sub!), subRow);
+      }
+      applyFilters();
+    } else if (catRow) {
+      toggle(hiddenCategories, catRow.dataset.cat!, catRow);
+      applyFilters();
+    }
+  };
+  host.addEventListener("click", (e) => onActivate(e.target as HTMLElement));
+  host.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onActivate(e.target as HTMLElement);
+    }
+  });
+}
+
+function toggle(set: Set<string>, key: string, row: HTMLElement): void {
+  if (set.has(key)) {
+    set.delete(key);
+    row.classList.remove("off");
+  } else {
+    set.add(key);
+    row.classList.add("off");
+  }
+}
+
+// --- Profiler-Panel ---------------------------------------------------------
 async function openPanel(osmType: string, osmId: number): Promise<void> {
   const panel = document.getElementById("panel");
   const body = document.getElementById("panel-body");
@@ -141,8 +268,7 @@ async function openPanel(osmType: string, osmId: number): Promise<void> {
   try {
     const res = await fetch(`${API_BASE}/object/${osmType}/${osmId}`);
     if (!res.ok) throw new Error(String(res.status));
-    const obj = (await res.json()) as ObjectDetail;
-    renderPanel(head, body, obj);
+    renderPanel(head, body, (await res.json()) as ObjectDetail);
   } catch {
     body.innerHTML = `<div class="panel-empty">Objekt nicht ladbar.</div>`;
   }
@@ -152,19 +278,19 @@ function renderPanel(head: HTMLElement, body: HTMLElement, obj: ObjectDetail): v
   const cat = CATEGORY_BY_ID[obj.category];
   const color = cat?.color ?? "#666";
   const label = cat?.label ?? obj.category;
+  const subLabel = obj.subtype ? subtypeLabel(obj.subtype) : null;
 
   head.innerHTML = `
     <span class="cat-dot" style="background:${color}"></span>
     <div class="title">
       <div class="cat">${escapeHtml(label)}</div>
-      <div class="id">${obj.osm_type}/${obj.osm_id}</div>
+      <div class="id">${obj.osm_type}/${obj.osm_id}${subLabel ? ` · <span class="sub">${escapeHtml(subLabel)}</span>` : ""}</div>
     </div>`;
 
   const current = obj.current;
   const observed = current ? formatDate(current.observed_at) : "—";
   const source = current ? current.source : "—";
 
-  // Quelle prominent — Kern-Signatur.
   let html = `
     <div class="source-card">
       <div class="k">Quelle</div>
@@ -191,7 +317,6 @@ function renderPanel(head: HTMLElement, body: HTMLElement, obj: ObjectDetail): v
 
   const n = obj.history.length;
   html += `<div class="hist">// ${n} Beobachtung${n === 1 ? "" : "en"} · erstmals gesehen ${formatDate(obj.first_seen)}</div>`;
-
   body.innerHTML = html;
 }
 
@@ -212,4 +337,8 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
+}
+
+function escapeAttr(s: string): string {
+  return escapeHtml(s);
 }

@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS object (
     osm_type   char(1)               NOT NULL,
     osm_id     bigint                NOT NULL,
     category   text                  NOT NULL,
+    -- Feinere Klassifikation aus den OSM-Tags (nullable). Ehrlichkeit: ein
+    -- Kirchturm (tower:type=bell_tower) darf nicht als Sendemast durchgehen,
+    -- eine Ortsnetzstation (substation=minor_distribution) nicht als Umspannwerk.
+    subtype    text,
     first_seen timestamptz           NOT NULL,
     last_seen  timestamptz           NOT NULL,
     geom       geometry(Point, 4326) NOT NULL,
@@ -30,6 +34,7 @@ CREATE TABLE IF NOT EXISTS object (
 -- Spalte stehen — deshalb bewusst keine gespeicherte 3857-Spalte.
 CREATE INDEX IF NOT EXISTS object_geom_idx     ON object USING gist (geom);
 CREATE INDEX IF NOT EXISTS object_category_idx ON object (category);
+CREATE INDEX IF NOT EXISTS object_cat_sub_idx  ON object (category, subtype);
 
 -- ---------------------------------------------------------------------------
 -- observation: eine Zeile pro Scan NUR wenn sich der attr_hash gegenüber der

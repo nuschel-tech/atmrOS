@@ -87,6 +87,11 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         if not records:
             raise RuntimeError("Keine Objekte gefiltert — Kette würde leer laufen.")
 
+        for cat in ("substation", "tower", "mast"):
+            sub = _subtype_summary(records, cat)
+            if sub:
+                log.info("Untertypen %s: %s", cat, sub)
+
         if dry_run:
             sample = records[:50]
             out = os.path.join(tempfile.gettempdir(), "atmros_sample.geojson")
@@ -105,6 +110,7 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         # --- SPEICHERN: object + observation in PostGIS -----------------------
         from . import db
         engine = db.get_engine(config.database_url())
+        db.ensure_schema(engine)  # idempotente Migration (z.B. subtype-Spalte)
         summary = db.write_run(engine, records, observed_at,
                                config.SOURCE, source_url)
         log.info("PostGIS: %d Objekte, %d neue Beobachtungen, %d unverändert",
@@ -123,6 +129,17 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         # Bayern; sparse_file_array hält ihn auf der Platte, RAM bleibt klein).
         peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
         log.info("Peak-RAM: %.0f MB", peak_mb)
+
+
+def _subtype_summary(records: list[dict], category: str) -> dict[str, int]:
+    """Zählt Untertypen einer Kategorie (None -> '(ohne Angabe)'), absteigend."""
+    counts: dict[str, int] = {}
+    for r in records:
+        if r["category"] != category:
+            continue
+        key = r.get("subtype") or "(ohne Angabe)"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: kv[1], reverse=True))
 
 
 def _write_sample_geojson(records: list[dict], path: str) -> None:

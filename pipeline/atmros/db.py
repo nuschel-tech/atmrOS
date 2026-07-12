@@ -24,6 +24,16 @@ def get_engine(url: str) -> Engine:
     return create_engine(url, future=True, pool_pre_ping=True)
 
 
+def ensure_schema(engine: Engine) -> None:
+    """Idempotente Migrationen. Init-SQL läuft nur bei leerem Volume; für eine
+    bereits befüllte DB holen wir hier fehlende Spalten/Indizes nach."""
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE object ADD COLUMN IF NOT EXISTS subtype text"))
+        conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS object_cat_sub_idx ON object (category, subtype)"
+        ))
+
+
 def attr_hash(attrs: dict[str, str]) -> str:
     """Stabiler Hash über die Tags — kanonisches JSON (sortiert, kompakt)."""
     canonical = json.dumps(attrs, sort_keys=True, ensure_ascii=False,
@@ -58,11 +68,13 @@ def write_run(engine: Engine, records: list[dict], observed_at: datetime,
         # 1) object upsern -----------------------------------------------------
         obj_upsert = text(
             """
-            INSERT INTO object (osm_type, osm_id, category, first_seen, last_seen, geom)
-            VALUES (:osm_type, :osm_id, :category, :ts, :ts,
+            INSERT INTO object
+                (osm_type, osm_id, category, subtype, first_seen, last_seen, geom)
+            VALUES (:osm_type, :osm_id, :category, :subtype, :ts, :ts,
                     ST_SetSRID(ST_MakePoint(:lon, :lat), 4326))
             ON CONFLICT (osm_type, osm_id) DO UPDATE
                 SET category  = EXCLUDED.category,
+                    subtype   = EXCLUDED.subtype,
                     last_seen = GREATEST(object.last_seen, EXCLUDED.last_seen),
                     geom      = EXCLUDED.geom
             """
@@ -71,8 +83,8 @@ def write_run(engine: Engine, records: list[dict], observed_at: datetime,
             conn.execute(obj_upsert, [
                 {
                     "osm_type": r["osm_type"], "osm_id": r["osm_id"],
-                    "category": r["category"], "ts": observed_at,
-                    "lon": r["lon"], "lat": r["lat"],
+                    "category": r["category"], "subtype": r.get("subtype"),
+                    "ts": observed_at, "lon": r["lon"], "lat": r["lat"],
                 }
                 for r in chunk
             ])

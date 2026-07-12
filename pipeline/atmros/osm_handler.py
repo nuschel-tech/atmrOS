@@ -25,6 +25,17 @@ def _tags_to_dict(tags: osmium.osm.TagList) -> dict[str, str]:
     return {t.k: t.v for t in tags}
 
 
+def _subtype(category: str, tags: osmium.osm.TagList) -> str | None:
+    """Feinere Klassifikation aus den Tags — nur für die zu groben Kategorien.
+    substation umfasst überwiegend kleine Ortsnetzstationen; tower/mast fangen
+    Kirch-/Wasser-/Aussichtstürme mit ein. tags.get() existiert in osmium 4.x."""
+    if category == "substation":
+        return tags.get("substation")
+    if category in ("tower", "mast"):
+        return tags.get("tower:type")
+    return None
+
+
 class InfraHandler(osmium.SimpleHandler):
     """Extrahiert Infrastruktur-Objekte. Nodes -> Punkt direkt; Ways -> auf
     einen Repräsentativpunkt (Mittel der gültigen Knoten) reduziert."""
@@ -41,6 +52,7 @@ class InfraHandler(osmium.SimpleHandler):
             "osm_type": osm_type,
             "osm_id": osm_id,
             "category": category,
+            "subtype": _subtype(category, tags),
             "lon": lon,
             "lat": lat,
             "attrs": _tags_to_dict(tags),

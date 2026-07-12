@@ -1,6 +1,5 @@
 ---
 import "../styles/theme.css";
-import { CATEGORIES } from "../lib/categories";
 ---
 
 <!-- atmrOS — das ehrliche ctOS. Dunkle Karte Bayerns, eine Infrastruktur-Ebene,
@@ -13,16 +12,8 @@ import { CATEGORIES } from "../lib/categories";
 </header>
 
 <aside class="legend">
-  <h4>Ebene</h4>
-  {
-    CATEGORIES.map((c) => (
-      <div class="row">
-        <span class="dot" style={`background:${c.color}`}></span>
-        <span>{c.label}</span>
-        <span class="count" data-count={c.id}>·</span>
-      </div>
-    ))
-  }
+  <h4>Ebene · Filter</h4>
+  <div id="legend-body"><div class="lg-hint">// lade Zähler …</div></div>
 </aside>
 
 <section id="panel" class="panel" aria-live="polite">
