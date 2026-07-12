@@ -15,6 +15,7 @@ import argparse
 import json
 import logging
 import os
+import resource
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -59,10 +60,24 @@ def _resolve_source(pbf_arg: str | None) -> tuple[str, datetime, str, bool]:
     return tmp_path, observed_at, url, True
 
 
+def _index_file(spec: str) -> str | None:
+    """Datei-Pfad eines datei-gestützten Node-Index (z.B. 'sparse_file_array,/x').
+    RAM-Indizes wie 'flex_mem' haben keine Datei -> None."""
+    if "," in spec:
+        return spec.split(",", 1)[1] or None
+    return None
+
+
 def run(pbf_arg: str | None, dry_run: bool) -> dict:
     pbf_path, observed_at, source_url, is_temp = _resolve_source(pbf_arg)
+    # Stale Node-Index aus einem früheren (evtl. abgebrochenen) Lauf entfernen —
+    # ein datei-gestützter Index soll pro Lauf frisch aufgebaut werden.
+    idx_file = _index_file(config.OSM_LOCATION_INDEX)
+    if idx_file and os.path.exists(idx_file):
+        os.unlink(idx_file)
     try:
         # --- FILTERN: PBF streamen, Records sammeln ---------------------------
+        log.info("Node-Index: %s", config.OSM_LOCATION_INDEX)
         records: list[dict] = []
         handler = parse_pbf(pbf_path, records.append, config.OSM_LOCATION_INDEX)
         log.info("Gefiltert: %d Objekte %s (ohne Geometrie übersprungen: %d)",
@@ -101,6 +116,13 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
     finally:
         if is_temp and os.path.exists(pbf_path):
             os.unlink(pbf_path)
+        if idx_file and os.path.exists(idx_file):
+            os.unlink(idx_file)
+        # Peak-RAM des Prozesses (Linux: ru_maxrss in KB). Wichtige Kennzahl,
+        # weil der Node-Index den Löwenanteil ausmacht (flex_mem ~2,1 GB für
+        # Bayern; sparse_file_array hält ihn auf der Platte, RAM bleibt klein).
+        peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        log.info("Peak-RAM: %.0f MB", peak_mb)
 
 
 def _write_sample_geojson(records: list[dict], path: str) -> None:

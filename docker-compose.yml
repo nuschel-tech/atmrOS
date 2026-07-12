@@ -55,8 +55,12 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
       ATMROS_PBF_URL: ${ATMROS_PBF_URL:-https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf}
       ATMROS_ARCHIVE_DIR: /data/archive
+      # Sicherer Default: datei-gestützter Index (RAM klein). Siehe .env.example.
+      ATMROS_OSM_INDEX: ${ATMROS_OSM_INDEX:-sparse_file_array,/data/node.idx}
+    # Persistentes, beschreibbares /data-Volume: Rohlager unter /data/archive,
+    # Node-Index unter /data/node.idx (pro Lauf frisch aufgebaut).
     volumes:
-      - archive:/data/archive
+      - archive:/data
     depends_on:
       db:
         condition: service_healthy
