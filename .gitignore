@@ -1,0 +1,23 @@
+# Env
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Node / Astro
+node_modules/
+web/dist/
+web/.astro/
+
+# Rohlager / Daten (nie ins Repo — liegt auf Volume/Host)
+data/
+*.osm.pbf
+*.parquet
+manifest.jsonl
+
+# OS
+.DS_Store

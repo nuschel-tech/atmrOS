@@ -1,0 +1,39 @@
+---
+import "../styles/theme.css";
+import { CATEGORIES } from "../lib/categories";
+---
+
+<!-- atmrOS — das ehrliche ctOS. Dunkle Karte Bayerns, eine Infrastruktur-Ebene,
+     Klick öffnet den Profiler mit Quelle + Stand-Datum. -->
+<div id="map"></div>
+
+<header class="hud-top">
+  <div class="brand">atmr<span class="os">OS</span></div>
+  <div class="sub">// Infrastruktur Bayern · eine Ebene · mit Quelle</div>
+</header>
+
+<aside class="legend">
+  <h4>Ebene</h4>
+  {
+    CATEGORIES.map((c) => (
+      <div class="row">
+        <span class="dot" style={`background:${c.color}`}></span>
+        <span>{c.label}</span>
+        <span class="count" data-count={c.id}>·</span>
+      </div>
+    ))
+  }
+</aside>
+
+<section id="panel" class="panel" aria-live="polite">
+  <div class="panel-head">
+    <div id="panel-head-content" class="title"></div>
+    <button id="panel-close" class="close" aria-label="Schließen">×</button>
+  </div>
+  <div id="panel-body" class="panel-body"></div>
+</section>
+
+<script>
+  import { initMap } from "../lib/map";
+  initMap();
+</script>

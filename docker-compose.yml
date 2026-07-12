@@ -1,0 +1,66 @@
+# atmrOS — Schritt 1: die ganze Kette einmal lauffähig.
+#
+#   docker compose up -d db api web        # Stack starten
+#   docker compose run --rm ingest         # einmal SAMMELN->…->SPEICHERN
+#   -> http://localhost:4321               # Karte, Klick = Panel mit Quelle
+#
+# Der Ingest ist bewusst KEIN Dauerdienst (profile "ingest"). Schritt 2 hängt
+# ihn an einen systemd-Timer auf dem Host für den Nightly-Lauf.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-atmros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atmros}
+      POSTGRES_DB: ${POSTGRES_DB:-atmros}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atmros} -d ${POSTGRES_DB:-atmros}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
+      ATMROS_CORS_ORIGINS: ${ATMROS_CORS_ORIGINS:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        PUBLIC_API_BASE: ${PUBLIC_API_BASE:-http://localhost:8000}
+        PUBLIC_BASEMAP_STYLE: ${PUBLIC_BASEMAP_STYLE:-https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json}
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-4321}:4321"
+    restart: unless-stopped
+
+  ingest:
+    build: ./pipeline
+    profiles: ["ingest"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-atmros}:${POSTGRES_PASSWORD:-atmros}@db:5432/${POSTGRES_DB:-atmros}
+      ATMROS_PBF_URL: ${ATMROS_PBF_URL:-https://download.geofabrik.de/europe/germany/bayern-latest.osm.pbf}
+      ATMROS_ARCHIVE_DIR: /data/archive
+    volumes:
+      - archive:/data/archive
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  archive:
