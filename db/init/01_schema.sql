@@ -80,3 +80,18 @@ CREATE TABLE IF NOT EXISTS change_event (
 );
 CREATE INDEX IF NOT EXISTS change_event_obj_idx
     ON change_event (osm_type, osm_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS change_event_time_idx
+    ON change_event (observed_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- ingest_state: eine Zeile, spiegelt ob gerade ein Ingest läuft. Das Frontend
+-- zeigt darüber den "Daten werden aktualisiert"-Hinweis.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ingest_state (
+    id         boolean     PRIMARY KEY DEFAULT true CHECK (id),
+    status     text        NOT NULL DEFAULT 'idle',
+    started_at timestamptz,
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+INSERT INTO ingest_state (id, status) VALUES (true, 'idle')
+    ON CONFLICT (id) DO NOTHING;

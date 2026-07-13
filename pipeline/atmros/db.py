@@ -41,6 +41,38 @@ def ensure_schema(engine: Engine) -> None:
         conn.execute(text(
             "CREATE INDEX IF NOT EXISTS object_cat_sub_idx ON object (category, subtype)"
         ))
+        # Ein-Zeilen-Tabelle für den Ingest-Status (Frontend zeigt "aktualisiert").
+        conn.execute(text(
+            """
+            CREATE TABLE IF NOT EXISTS ingest_state (
+                id         boolean PRIMARY KEY DEFAULT true CHECK (id),
+                status     text    NOT NULL DEFAULT 'idle',
+                started_at timestamptz,
+                updated_at timestamptz NOT NULL DEFAULT now()
+            )
+            """
+        ))
+        conn.execute(text(
+            "INSERT INTO ingest_state (id, status) VALUES (true, 'idle') "
+            "ON CONFLICT (id) DO NOTHING"
+        ))
+
+
+def set_status(engine: Engine, status: str) -> None:
+    """Setzt den Ingest-Status ('running'/'idle'). started_at nur beim Start."""
+    with engine.begin() as conn:
+        conn.execute(text(
+            """
+            INSERT INTO ingest_state (id, status, started_at, updated_at)
+            VALUES (true, :s,
+                    CASE WHEN :s = 'running' THEN now() ELSE NULL END, now())
+            ON CONFLICT (id) DO UPDATE
+                SET status = EXCLUDED.status,
+                    started_at = CASE WHEN EXCLUDED.status = 'running'
+                                      THEN now() ELSE ingest_state.started_at END,
+                    updated_at = now()
+            """
+        ), {"s": status})
 
 
 def attr_hash(attrs: dict[str, str]) -> str:

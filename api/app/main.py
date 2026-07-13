@@ -84,6 +84,23 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+@router.get("/status")
+def ingest_status() -> dict:
+    """Ob gerade ein Ingest läuft — fürs "Daten werden aktualisiert" im Frontend.
+    Offen (kein Gate), defensiv (Tabelle fehlt evtl. vor dem ersten neuen Ingest)."""
+    try:
+        with get_engine().connect() as conn:
+            row = conn.execute(text(
+                "SELECT status, updated_at FROM ingest_state WHERE id LIMIT 1"
+            )).first()
+    except Exception:  # noqa: BLE001 — Tabelle noch nicht migriert -> idle
+        return {"status": "idle"}
+    if row is None:
+        return {"status": "idle"}
+    return {"status": row.status,
+            "updated_at": row.updated_at.isoformat() if row.updated_at else None}
+
+
 @router.get("/tiles/{z}/{x}/{y}.pbf", dependencies=[Depends(require_session)])
 def tiles(z: int, x: int, y: int) -> Response:
     if not (0 <= z <= 24):

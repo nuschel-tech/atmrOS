@@ -66,7 +66,7 @@ let map: maplibregl.Map;
 let dataVersion = "";
 let latestStats: StatsResponse | null = null;
 let pollTimer: number | undefined;
-const POLL_MS = 180_000; // alle 3 Minuten auf neuen Stand prüfen
+const POLL_MS = 120_000; // alle 2 Min: Ingest-Status + neuer Stand prüfen
 
 const subKey = (cat: string, sub: string): string => `${cat}::${sub}`;
 
@@ -196,21 +196,40 @@ export async function initMap(): Promise<void> {
   wireLegend();
 }
 
-// --- "neuer Stand"-Update ---------------------------------------------------
+// --- Polling: Ingest-Status + neuer Stand -----------------------------------
 function startVersionPolling(): void {
   if (pollTimer !== undefined) return;
-  pollTimer = window.setInterval(() => {
-    void (async () => {
-      const stats = await fetchStats();
-      if (!stats) return;
-      const v = stats.latest_observed_at ?? "";
-      // Nur melden, wenn wir schon einen Stand kannten und er sich geändert hat.
-      if (v && dataVersion && v !== dataVersion) {
-        latestStats = stats;
-        showToast();
-      }
-    })();
-  }, POLL_MS);
+  pollTimer = window.setInterval(() => void poll(), POLL_MS);
+}
+
+async function poll(): Promise<void> {
+  // "Daten werden aktualisiert"-Banner spiegeln.
+  setUpdating((await fetchStatus()) === "running");
+
+  const stats = await fetchStats();
+  if (!stats) return;
+  const v = stats.latest_observed_at ?? "";
+  // Nur melden, wenn wir schon einen Stand kannten und er sich geändert hat.
+  if (v && dataVersion && v !== dataVersion) {
+    latestStats = stats;
+    showToast();
+  }
+}
+
+async function fetchStatus(): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/status`, { credentials: "include" });
+    if (!res.ok) return "idle";
+    return ((await res.json()) as { status?: string }).status ?? "idle";
+  } catch {
+    return "idle";
+  }
+}
+
+function setUpdating(on: boolean): void {
+  const el = document.getElementById("updating");
+  if (!el) return;
+  el.toggleAttribute("hidden", !on);
 }
 
 function applyNewVersion(): void {

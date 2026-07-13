@@ -69,13 +69,25 @@ def _index_file(spec: str) -> str | None:
 
 
 def run(pbf_arg: str | None, dry_run: bool) -> dict:
-    pbf_path, observed_at, source_url, is_temp = _resolve_source(pbf_arg)
-    # Stale Node-Index aus einem früheren (evtl. abgebrochenen) Lauf entfernen —
-    # ein datei-gestützter Index soll pro Lauf frisch aufgebaut werden.
+    engine = None
+    pbf_path: str | None = None
+    is_temp = False
     idx_file = _index_file(config.OSM_LOCATION_INDEX)
-    if idx_file and os.path.exists(idx_file):
-        os.unlink(idx_file)
     try:
+        # Für echte Läufe früh DB verbinden + Status "running" setzen — so kann
+        # das Frontend während Download/Parse "Daten werden aktualisiert" zeigen.
+        if not dry_run:
+            from . import db
+            engine = db.get_engine(config.database_url())
+            db.ensure_schema(engine)  # idempotente Migration (subtype/present/state)
+            db.set_status(engine, "running")
+
+        # --- SAMMELN ----------------------------------------------------------
+        pbf_path, observed_at, source_url, is_temp = _resolve_source(pbf_arg)
+        # Stale Node-Index aus einem früheren (evtl. abgebrochenen) Lauf entfernen.
+        if idx_file and os.path.exists(idx_file):
+            os.unlink(idx_file)
+
         # --- FILTERN: PBF streamen, Records sammeln ---------------------------
         log.info("Node-Index: %s", config.OSM_LOCATION_INDEX)
         records: list[dict] = []
@@ -107,10 +119,7 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         log.info("Rohlager: %s (sha256=%s…, %d Objekte)",
                  manifest["path"], manifest["sha256"][:12], manifest["count"])
 
-        # --- SPEICHERN: object + observation in PostGIS -----------------------
-        from . import db
-        engine = db.get_engine(config.database_url())
-        db.ensure_schema(engine)  # idempotente Migration (z.B. subtype-Spalte)
+        # --- SPEICHERN + ERINNERN: object/observation/change_event ------------
         summary = db.write_run(engine, records, observed_at,
                                config.SOURCE, source_url)
         log.info("PostGIS: %d Objekte, %d neue Beobachtungen | Diff: "
@@ -122,10 +131,17 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         summary["observed_at"] = observed_at.isoformat()
         return summary
     finally:
-        if is_temp and os.path.exists(pbf_path):
+        if is_temp and pbf_path and os.path.exists(pbf_path):
             os.unlink(pbf_path)
         if idx_file and os.path.exists(idx_file):
             os.unlink(idx_file)
+        # Status immer zurücksetzen — auch bei Fehler darf "running" nie hängen.
+        if engine is not None:
+            try:
+                from . import db
+                db.set_status(engine, "idle")
+            except Exception:  # noqa: BLE001
+                log.exception("Ingest-Status konnte nicht auf idle gesetzt werden")
         # Peak-RAM des Prozesses (Linux: ru_maxrss in KB). Wichtige Kennzahl,
         # weil der Node-Index den Löwenanteil ausmacht (flex_mem ~2,1 GB für
         # Bayern; sparse_file_array hält ihn auf der Platte, RAM bleibt klein).
