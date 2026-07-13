@@ -214,25 +214,21 @@ function buildLegend(stats: StatsResponse): void {
   const host = document.getElementById("legend-body");
   if (!host) return;
   const de = (n: number): string => n.toLocaleString("de-DE");
-  const rows: string[] = [];
+  const groups: string[] = [];
 
   for (const c of CATEGORIES) {
     const total = stats.by_category[c.id] ?? 0;
-    rows.push(
-      `<div class="lg-cat" data-cat="${c.id}" role="button" tabindex="0">
-         <span class="dot" style="background:${c.color}"></span>
-         <span class="lbl">${c.label}</span>
-         <span class="count">${de(total)}</span>
-       </div>`,
-    );
-
-    // Untertyp-Unterzeilen nur für die zu groben Kategorien. Echte Daten haben
-    // einen langen Freitext-Schwanz (tower: ~74 Werte) — daher Top-N + Sammel-
-    // zeile "andere", die den Rest gemeinsam filterbar hält.
     const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
+    const hasSubs = !!subs && Object.keys(subs).length > 0;
+
+    // Untertypen stecken hinter einem Pfeil (eingeklappt) — nur die zu groben
+    // Kategorien haben welche. Echte Daten haben einen langen Freitext-Schwanz
+    // (tower: ~74 Werte) -> Top-8 + Sammelzeile "andere".
+    let subsHtml = "";
     if (subs) {
       const ordered = Object.entries(subs).sort((a, b) => b[1] - a[1]);
       const TOP = 8;
+      const rows: string[] = [];
       for (const [sub, n] of ordered.slice(0, TOP)) {
         const label = sub === NO_SUBTYPE ? NO_SUBTYPE : subtypeLabel(sub);
         rows.push(
@@ -253,18 +249,42 @@ function buildLegend(stats: StatsResponse): void {
            </div>`,
         );
       }
+      subsHtml = `<div class="lg-subs" hidden>${rows.join("")}</div>`;
     }
+
+    const arrow = hasSubs
+      ? `<span class="lg-arrow" role="button" tabindex="0" aria-label="Untertypen ein-/ausklappen" aria-expanded="false">▸</span>`
+      : "";
+
+    groups.push(
+      `<div class="lg-group" data-cat="${c.id}">
+         <div class="lg-cat" data-cat="${c.id}" role="button" tabindex="0" aria-pressed="true">
+           <span class="dot" style="background:${c.color}"></span>
+           <span class="lbl">${c.label}</span>
+           <span class="count">${de(total)}</span>
+           ${arrow}
+         </div>
+         ${subsHtml}
+       </div>`,
+    );
   }
-  host.innerHTML = rows.join("");
+  host.innerHTML = groups.join("");
 }
 
 function wireLegend(): void {
   const host = document.getElementById("legend-body");
   if (!host) return;
   const onActivate = (target: HTMLElement): void => {
-    const catRow = target.closest<HTMLElement>(".lg-cat");
+    // 1) Pfeil: nur auf-/zuklappen, Kategorie NICHT umschalten.
+    const arrow = target.closest<HTMLElement>(".lg-arrow");
+    if (arrow) {
+      toggleExpand(arrow);
+      return;
+    }
+    // 2) Untertyp-Zeile — ignoriert, wenn die Hauptkategorie aus ist.
     const subRow = target.closest<HTMLElement>(".lg-sub");
     if (subRow) {
+      if (subRow.closest(".lg-group")?.classList.contains("cat-off")) return;
       const cat = subRow.dataset.cat!;
       if (subRow.dataset.subs) {
         // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
@@ -280,8 +300,16 @@ function wireLegend(): void {
         toggle(hiddenSubtypes, subKey(cat, subRow.dataset.sub!), subRow);
       }
       applyFilters();
-    } else if (catRow) {
-      toggle(hiddenCategories, catRow.dataset.cat!, catRow);
+      return;
+    }
+    // 3) Kategorie-Zeile: umschalten; alle Untertypen durchstreichen, wenn aus.
+    const catRow = target.closest<HTMLElement>(".lg-cat");
+    if (catRow) {
+      const cat = catRow.dataset.cat!;
+      toggle(hiddenCategories, cat, catRow);
+      const off = hiddenCategories.has(cat);
+      catRow.setAttribute("aria-pressed", String(!off));
+      catRow.closest<HTMLElement>(".lg-group")?.classList.toggle("cat-off", off);
       applyFilters();
     }
   };
@@ -292,6 +320,15 @@ function wireLegend(): void {
       onActivate(e.target as HTMLElement);
     }
   });
+}
+
+function toggleExpand(arrow: HTMLElement): void {
+  const subs = arrow.closest<HTMLElement>(".lg-group")?.querySelector<HTMLElement>(".lg-subs");
+  if (!subs) return;
+  const collapsed = subs.hasAttribute("hidden");
+  subs.toggleAttribute("hidden", !collapsed);
+  arrow.textContent = collapsed ? "▾" : "▸";
+  arrow.setAttribute("aria-expanded", String(collapsed));
 }
 
 function toggle(set: Set<string>, key: string, row: HTMLElement): void {
