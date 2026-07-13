@@ -68,7 +68,40 @@ def _index_file(spec: str) -> str | None:
     return None
 
 
-def run(pbf_arg: str | None, dry_run: bool) -> dict:
+def _head_last_modified(url: str) -> datetime | None:
+    """Stand des Remote-PBF via HEAD (Last-Modified), ohne Download. Best effort."""
+    try:
+        resp = requests.head(url, timeout=60, allow_redirects=True)
+        resp.raise_for_status()
+        lm = resp.headers.get("last-modified")
+    except requests.RequestException:
+        return None
+    if not lm:
+        return None
+    dt = parsedate_to_datetime(lm)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def _up_to_date(engine, pbf_arg: str | None) -> bool:
+    """True, wenn der Remote-Stand nicht neuer ist als der zuletzt eingelesene —
+    dann kann der volle Download übersprungen werden. Im Zweifel False (lieber
+    verarbeiten als einen Stand verpassen)."""
+    if pbf_arg and os.path.exists(pbf_arg):
+        return False  # lokale Datei -> immer verarbeiten
+    remote = _head_last_modified(pbf_arg or config.GEOFABRIK_PBF_URL)
+    if remote is None:
+        return False
+    from . import db
+    last = db.last_observed(engine)
+    if last is None:
+        return False  # noch nie ingested
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    log.info("if-modified: remote=%s, db=%s", remote.isoformat(), last.isoformat())
+    return remote <= last
+
+
+def run(pbf_arg: str | None, dry_run: bool, if_modified: bool = False) -> dict:
     engine = None
     pbf_path: str | None = None
     is_temp = False
@@ -80,6 +113,10 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
             from . import db
             engine = db.get_engine(config.database_url())
             db.ensure_schema(engine)  # idempotente Migration (subtype/present/state)
+            # --if-modified: nur laufen, wenn Geofabrik einen neueren Stand hat.
+            if if_modified and _up_to_date(engine, pbf_arg):
+                log.info("Kein neuer Stand — Ingest übersprungen.")
+                return {"skipped": True}
             db.set_status(engine, "running")
 
         # --- SAMMELN ----------------------------------------------------------
@@ -176,10 +213,13 @@ def _write_sample_geojson(records: list[dict], path: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="atmrOS Ingest (Schritt 1)")
+    parser = argparse.ArgumentParser(description="atmrOS Ingest")
     parser.add_argument("--pbf", help="Lokales PBF oder URL (Standard: Geofabrik Bayern)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Nur parsen/zählen, keine DB, Sample-GeoJSON schreiben")
+    parser.add_argument("--if-modified", action="store_true",
+                        help="Nur laufen, wenn der Remote-PBF-Stand (Last-Modified) "
+                             "neuer ist als der zuletzt eingelesene — für den Nightly-Timer")
     args = parser.parse_args(argv)
 
     logging.basicConfig(
@@ -187,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     try:
-        run(args.pbf, args.dry_run)
+        run(args.pbf, args.dry_run, if_modified=args.if_modified)
         return 0
     except Exception:  # noqa: BLE001 — bewusst: loggen und sauber mit !=0 raus
         log.exception("Ingest fehlgeschlagen — Kette abgebrochen, nichts committet.")

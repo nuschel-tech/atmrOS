@@ -134,7 +134,31 @@ Ab jetzt zeigt `https://atomar.org` direkt die App.
 - **Nur Gate-Secrets** (`ATMROS_LAUNCHED`, `…_SESSION_SECRET`, `…_PASSWORD_HASH`)
   → **kein** Rebuild, nur `docker compose up -d web api`.
 - **API-Code** → `docker compose build api && docker compose up -d api`.
-- **Frische Daten** → `docker compose run --rm ingest` (später systemd-Timer = Schritt 2).
+- **Frische Daten von Hand** → `docker compose run --rm ingest`.
+
+## Automatischer täglicher Ingest (systemd-Timer)
+
+Geofabrik veröffentlicht den Bayern-Stand **nicht** zuverlässig um 01:00 (real
+zwischen ~01:30 und vormittags). Deshalb läuft der Timer **alle 2 Stunden** und
+der Ingest prüft per HEAD (`--if-modified`): nur bei echtem neuen Stand werden
+die ~807 MB geladen und verarbeitet, sonst ist der Lauf ein billiger
+HEAD-Request. So wächst das Archiv zuverlässig, egal wann die Daten kommen.
+
+```bash
+# WorkingDirectory in der .service auf dein Projektverzeichnis anpassen!
+sudo cp deploy/systemd/atmros-ingest.service /etc/systemd/system/
+sudo cp deploy/systemd/atmros-ingest.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now atmros-ingest.timer
+
+systemctl list-timers atmros-ingest.timer     # nächster Lauf
+sudo systemctl start atmros-ingest.service     # sofort testen (einmalig)
+journalctl -u atmros-ingest.service -f         # Log ansehen
+```
+
+Während ein echter Ingest läuft, zeigt die Seite oben „// Daten werden
+aktualisiert …"; ist der neue Stand da, erscheint unten der Toast
+„neuer Stand verfügbar" (kein Reload nötig).
 
 ## Troubleshooting
 

@@ -75,6 +75,14 @@ def set_status(engine: Engine, status: str) -> None:
         ), {"s": status})
 
 
+def last_observed(engine: Engine):
+    """Neuester observed_at über alle Beobachtungen (= zuletzt eingelesener
+    PBF-Stand). None, wenn noch nie ingested. Für den --if-modified-Check."""
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT max(observed_at) AS m FROM observation")).first()
+    return row.m if row else None
+
+
 def attr_hash(attrs: dict[str, str]) -> str:
     """Stabiler Hash über die Tags — kanonisches JSON (sortiert, kompakt).
     Serialisierung über config.canonical_attrs (dieselbe wie im Rohlager)."""
