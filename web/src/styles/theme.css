@@ -38,6 +38,26 @@ html, body {
 
 #map { position: absolute; inset: 0; }
 
+/* --- Toast "neuer Stand verfügbar" --------------------------------------- */
+.toast {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 7; display: flex; align-items: center; gap: 12px;
+  padding: 9px 10px 9px 15px;
+  background: color-mix(in srgb, var(--bg-1) 92%, transparent);
+  border: 1px solid var(--atmr-pink); border-radius: 999px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  font-family: var(--mono); font-size: 12.5px; color: var(--text-0);
+}
+.toast[hidden] { display: none; }
+.toast .toast-msg { letter-spacing: 0.02em; }
+.toast .toast-btn {
+  background: var(--atmr-pink); border: 0; border-radius: 999px;
+  color: #0a0a0a; font-family: var(--mono); font-weight: 700; font-size: 12px;
+  padding: 5px 13px; cursor: pointer;
+}
+.toast .toast-btn:hover { filter: brightness(1.08); }
+
 /* --- Header / Marke ------------------------------------------------------- */
 .hud-top {
   position: absolute; top: 14px; left: 14px; z-index: 5;

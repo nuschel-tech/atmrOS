@@ -31,6 +31,7 @@ const LAYER_SEL = "infra-selected";
 interface StatsResponse {
   by_category: Record<string, number>;
   by_subtype: Record<string, Record<string, number>>;
+  latest_observed_at: string | null;
 }
 
 interface ObjectDetail {
@@ -58,7 +59,21 @@ const hiddenSubtypes = new Set<string>(); // Schlüssel: `${category}::${subVal}
 let selected: { type: string; id: number } | null = null;
 let map: maplibregl.Map;
 
+// --- Daten-Version (Cache-Busting fürs "neuer Stand"-Update) ----------------
+// Die Tile-URL trägt ?v=<Stand>. Ändert sich der Stand (nach einem Ingest),
+// wechselt die URL -> MapLibre lädt die Tiles frisch, ohne Seiten-Reload und
+// ohne den 1-Stunden-Cache auszuhebeln.
+let dataVersion = "";
+let latestStats: StatsResponse | null = null;
+let pollTimer: number | undefined;
+const POLL_MS = 180_000; // alle 3 Minuten auf neuen Stand prüfen
+
 const subKey = (cat: string, sub: string): string => `${cat}::${sub}`;
+
+function tileUrl(version: string): string {
+  const v = version ? `?v=${encodeURIComponent(version)}` : "";
+  return `${API_BASE}/tiles/{z}/{x}/{y}.pbf${v}`;
+}
 
 // Dunkler Notfall-Style, falls keine pmtiles-URL gesetzt ist oder das
 // Style-JSON nicht lädt — die Objekt-Punkte bleiben auf dunklem Grund sichtbar.
@@ -112,10 +127,18 @@ export async function initMap(): Promise<void> {
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
-  map.on("load", () => {
+  map.on("load", async () => {
+    // Stand zuerst holen -> Tile-URL bekommt ?v=<Stand>, Legende wird gefüllt.
+    const stats = await fetchStats();
+    if (stats) {
+      latestStats = stats;
+      dataVersion = stats.latest_observed_at ?? "";
+      buildLegend(stats);
+    }
+
     map.addSource(SRC, {
       type: "vector",
-      tiles: [`${API_BASE}/tiles/{z}/{x}/{y}.pbf`],
+      tiles: [tileUrl(dataVersion)],
       minzoom: 0,
       maxzoom: 14,
     });
@@ -160,7 +183,7 @@ export async function initMap(): Promise<void> {
     map.on("mouseleave", LAYER, () => (map.getCanvas().style.cursor = ""));
 
     applyFilters();
-    void loadStats();
+    startVersionPolling();
   });
 
   document.getElementById("panel-close")?.addEventListener("click", () => {
@@ -168,8 +191,43 @@ export async function initMap(): Promise<void> {
     selected = null;
     applyFilters();
   });
+  document.getElementById("toast-apply")?.addEventListener("click", applyNewVersion);
 
   wireLegend();
+}
+
+// --- "neuer Stand"-Update ---------------------------------------------------
+function startVersionPolling(): void {
+  if (pollTimer !== undefined) return;
+  pollTimer = window.setInterval(() => {
+    void (async () => {
+      const stats = await fetchStats();
+      if (!stats) return;
+      const v = stats.latest_observed_at ?? "";
+      // Nur melden, wenn wir schon einen Stand kannten und er sich geändert hat.
+      if (v && dataVersion && v !== dataVersion) {
+        latestStats = stats;
+        showToast();
+      }
+    })();
+  }, POLL_MS);
+}
+
+function applyNewVersion(): void {
+  if (!latestStats) return;
+  dataVersion = latestStats.latest_observed_at ?? dataVersion;
+  const src = map.getSource(SRC) as maplibregl.VectorTileSource | undefined;
+  src?.setTiles([tileUrl(dataVersion)]); // frische Tiles, kein Reload
+  buildLegend(latestStats);              // Legenden-Zahlen aktualisieren
+  hideToast();
+}
+
+function showToast(): void {
+  document.getElementById("toast")?.removeAttribute("hidden");
+}
+
+function hideToast(): void {
+  document.getElementById("toast")?.setAttribute("hidden", "");
 }
 
 // --- Filter -----------------------------------------------------------------
@@ -200,13 +258,13 @@ function applyFilters(): void {
 }
 
 // --- Legende ----------------------------------------------------------------
-async function loadStats(): Promise<void> {
+async function fetchStats(): Promise<StatsResponse | null> {
   try {
     const res = await fetch(`${API_BASE}/stats`, { credentials: "include" });
-    if (!res.ok) return;
-    buildLegend((await res.json()) as StatsResponse);
+    if (!res.ok) return null;
+    return (await res.json()) as StatsResponse;
   } catch {
-    /* Legende bleibt leer — kein harter Fehler. */
+    return null; // kein harter Fehler — Legende/Version bleiben wie sie sind
   }
 }
 

@@ -33,6 +33,11 @@ import "../styles/theme.css";
       <div id="panel-body" class="panel-body"></div>
     </section>
 
+    <div id="toast" class="toast" role="status" hidden>
+      <span class="toast-msg">// neuer Stand verfügbar</span>
+      <button id="toast-apply" class="toast-btn">aktualisieren</button>
+    </div>
+
     <script>
       import { initMap } from "../lib/map";
       initMap().catch((e) => console.error("atmrOS map init failed", e));
