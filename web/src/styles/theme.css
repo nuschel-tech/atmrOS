@@ -82,10 +82,12 @@ html, body {
 
 /* Aufklapp-Pfeil am Zeilenende (klappt die Untertypen auf/zu). */
 .lg-arrow {
-  flex: 0 0 auto; width: 16px; text-align: center; cursor: pointer;
-  color: var(--text-2); font-size: 10px; line-height: 1;
+  flex: 0 0 auto; width: 22px; height: 20px; margin-left: 2px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: var(--text-1); font-size: 15px; line-height: 1; border-radius: 6px;
 }
-.lg-arrow:hover { color: var(--text-0); }
+.lg-arrow:hover { color: var(--atmr-pink); background: var(--bg-2); }
+.lg-arrow[aria-expanded="true"] { color: var(--text-0); }
 
 /* Untertyp-Container — eingeklappt via [hidden]. */
 .lg-subs { margin: 1px 0 4px; }
@@ -101,10 +103,10 @@ html, body {
 
 /* Ausgeblendet: gedämpft + durchgestrichen — sichtbar, nicht verschwunden. */
 .lg-cat.off, .lg-sub.off { opacity: 0.4; text-decoration: line-through; }
-/* Hauptkategorie aus -> alle Untertypen durchgestrichen & inaktiv. */
-.lg-group.cat-off .lg-sub {
-  opacity: 0.4; text-decoration: line-through; pointer-events: none;
-}
+/* Hauptkategorie aus -> alle Untertypen durchgestrichen (aber weiter klickbar:
+   ein Klick isoliert genau diesen Untertyp und schaltet die Kategorie an). */
+.lg-group.cat-off .lg-sub { opacity: 0.4; text-decoration: line-through; }
+.lg-group.cat-off .lg-sub:hover { opacity: 0.7; }
 .lg-cat:focus-visible, .lg-sub:focus-visible, .lg-arrow:focus-visible {
   outline: 1px solid var(--atmr-pink); outline-offset: 1px;
 }

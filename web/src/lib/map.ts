@@ -281,12 +281,16 @@ function wireLegend(): void {
       toggleExpand(arrow);
       return;
     }
-    // 2) Untertyp-Zeile — ignoriert, wenn die Hauptkategorie aus ist.
+    // 2) Untertyp-Zeile.
     const subRow = target.closest<HTMLElement>(".lg-sub");
     if (subRow) {
-      if (subRow.closest(".lg-group")?.classList.contains("cat-off")) return;
+      const group = subRow.closest<HTMLElement>(".lg-group");
       const cat = subRow.dataset.cat!;
-      if (subRow.dataset.subs) {
+      if (group?.classList.contains("cat-off")) {
+        // Hauptkategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder
+        // an, aber NUR dieser Untertyp sichtbar, alle anderen aus.
+        isolateSubtype(group, cat, subRow);
+      } else if (subRow.dataset.subs) {
         // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
         const vals = JSON.parse(subRow.dataset.subs) as string[];
         const turningOff = !subRow.classList.contains("off");
@@ -329,6 +333,34 @@ function toggleExpand(arrow: HTMLElement): void {
   subs.toggleAttribute("hidden", !collapsed);
   arrow.textContent = collapsed ? "▾" : "▸";
   arrow.setAttribute("aria-expanded", String(collapsed));
+}
+
+// Komposit-Schlüssel einer Untertyp-Zeile (Einzeltyp oder Sammelzeile "andere").
+function subKeysOf(row: HTMLElement, cat: string): string[] {
+  if (row.dataset.subs) {
+    return (JSON.parse(row.dataset.subs) as string[]).map((v) => subKey(cat, v));
+  }
+  return [subKey(cat, row.dataset.sub!)];
+}
+
+// Aus dem "Kategorie-aus"-Zustand heraus genau einen Untertyp aktivieren:
+// Kategorie wieder an, nur die geklickte Zeile sichtbar, alle anderen aus.
+function isolateSubtype(group: HTMLElement, cat: string, clicked: HTMLElement): void {
+  hiddenCategories.delete(cat);
+  group.classList.remove("cat-off");
+  const catRow = group.querySelector<HTMLElement>(".lg-cat");
+  if (catRow) {
+    catRow.classList.remove("off");
+    catRow.setAttribute("aria-pressed", "true");
+  }
+  for (const row of group.querySelectorAll<HTMLElement>(".lg-sub")) {
+    const isClicked = row === clicked;
+    for (const key of subKeysOf(row, cat)) {
+      if (isClicked) hiddenSubtypes.delete(key);
+      else hiddenSubtypes.add(key);
+    }
+    row.classList.toggle("off", !isClicked);
+  }
 }
 
 function toggle(set: Set<string>, key: string, row: HTMLElement): void {
