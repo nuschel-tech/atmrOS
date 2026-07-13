@@ -13,6 +13,7 @@ source_url + observed_at. Das Panel im Frontend zeigt sie prominent.
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -207,6 +208,50 @@ def stats() -> dict:
         "by_category": {r.category: r.n for r in by_cat},
         "by_subtype": by_subtype,
         "latest_observed_at": latest.m.isoformat() if latest and latest.m else None,
+    }
+
+
+@router.get("/changes", dependencies=[Depends(require_session)])
+def changes(since: str | None = None, limit: int = 500) -> dict:
+    """Änderungen (change_event) seit `since` (ISO 8601, Default: letzte 7 Tage),
+    verknüpft mit Objekt-Position/Kategorie. Neueste zuerst."""
+    limit = max(1, min(limit, 2000))
+    if since:
+        try:
+            since_dt = datetime.fromisoformat(since)
+        except ValueError:
+            raise HTTPException(400, "since must be ISO 8601")
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+    else:
+        since_dt = datetime.now(timezone.utc) - timedelta(days=7)
+
+    with get_engine().connect() as conn:
+        rows = conn.execute(text(
+            """
+            SELECT ce.osm_type, ce.osm_id, ce.event_type, ce.observed_at, ce.diff,
+                   o.category, o.subtype, ST_Y(o.geom) AS lat, ST_X(o.geom) AS lon
+            FROM change_event ce
+            JOIN object o ON o.osm_type = ce.osm_type AND o.osm_id = ce.osm_id
+            WHERE ce.observed_at >= :since
+            ORDER BY ce.observed_at DESC, ce.id DESC
+            LIMIT :limit
+            """
+        ), {"since": since_dt, "limit": limit}).all()
+
+    return {
+        "since": since_dt.isoformat(),
+        "count": len(rows),
+        "changes": [
+            {
+                "osm_type": r.osm_type, "osm_id": r.osm_id,
+                "event_type": r.event_type,
+                "observed_at": r.observed_at.isoformat(),
+                "category": r.category, "subtype": r.subtype,
+                "lon": r.lon, "lat": r.lat, "diff": r.diff,
+            }
+            for r in rows
+        ],
     }
 
 

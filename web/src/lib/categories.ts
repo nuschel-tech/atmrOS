@@ -87,6 +87,24 @@ export function subtypeLabel(value: string): string {
   return SUBTYPE_LABELS[value] ?? value;
 }
 
+// Änderungs-Ereignisse: Label (DE) + Farbe. Pink = echte Auffälligkeit
+// (NEU/GEÄNDERT/WIEDER); Gelöschtes gedämpft grau.
+export const EVENT_META: Record<string, { label: string; color: string }> = {
+  NEW: { label: "NEU", color: "#e31c8d" },
+  CHANGED: { label: "GEÄNDERT", color: "#e31c8d" },
+  RESTORED: { label: "WIEDER DA", color: "#5bc0be" },
+  DELETED: { label: "GELÖSCHT", color: "#8a8f98" },
+};
+
+export function eventColorExpression(): unknown[] {
+  const expr: unknown[] = ["match", ["get", "event_type"]];
+  for (const [id, meta] of Object.entries(EVENT_META)) {
+    expr.push(id, meta.color);
+  }
+  expr.push(ACCENT); // Fallback
+  return expr;
+}
+
 // Als MapLibre-'match'-Ausdruck: category -> Farbe.
 export function categoryColorExpression(): unknown[] {
   const expr: unknown[] = ["match", ["get", "category"]];

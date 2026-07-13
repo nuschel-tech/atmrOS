@@ -18,15 +18,31 @@ import {
   ACCENT,
   CATEGORIES,
   CATEGORY_BY_ID,
+  EVENT_META,
   NO_SUBTYPE,
   REFINED,
   categoryColorExpression,
+  eventColorExpression,
   subtypeLabel,
 } from "./categories";
 
 const SRC = "atmros-infra";
 const LAYER = "infra-points";
 const LAYER_SEL = "infra-selected";
+const CHG_SRC = "atmros-changes";
+const CHG_LAYER = "changes-highlight";
+
+interface ChangeItem {
+  osm_type: string;
+  osm_id: number;
+  event_type: string;
+  observed_at: string;
+  category: string;
+  subtype: string | null;
+  lon: number;
+  lat: number;
+  diff: Record<string, unknown> | null;
+}
 
 interface StatsResponse {
   by_category: Record<string, number>;
@@ -172,6 +188,22 @@ export async function initMap(): Promise<void> {
       },
     });
 
+    // Änderungs-Highlight: leere GeoJSON-Quelle, wird bei Bedarf befüllt.
+    map.addSource(CHG_SRC, { type: "geojson", data: emptyFC() });
+    map.addLayer({
+      id: CHG_LAYER,
+      type: "circle",
+      source: CHG_SRC,
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 5, 10, 9, 14, 13],
+        "circle-color": eventColorExpression() as maplibregl.DataDrivenPropertyValueSpecification<string>,
+        "circle-opacity": 0.18,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": eventColorExpression() as maplibregl.DataDrivenPropertyValueSpecification<string>,
+      },
+    }, LAYER); // unter den Objekt-Punkten
+
     map.on("click", LAYER, (e) => {
       const f = e.features?.[0];
       if (!f) return;
@@ -192,8 +224,99 @@ export async function initMap(): Promise<void> {
     applyFilters();
   });
   document.getElementById("toast-apply")?.addEventListener("click", applyNewVersion);
+  document.getElementById("changes-toggle")?.addEventListener("click", toggleChanges);
+  document.getElementById("changes-close")?.addEventListener("click", () => setChanges(false));
 
   wireLegend();
+}
+
+// --- Änderungsansicht -------------------------------------------------------
+let changesOn = false;
+
+function emptyFC(): GeoJSON.FeatureCollection {
+  return { type: "FeatureCollection", features: [] };
+}
+
+function toggleChanges(): void {
+  setChanges(!changesOn);
+}
+
+function setChanges(on: boolean): void {
+  changesOn = on;
+  document.getElementById("changes")?.toggleAttribute("hidden", !on);
+  document.getElementById("changes-toggle")?.setAttribute("aria-pressed", String(on));
+  if (map.getLayer(CHG_LAYER)) {
+    map.setLayoutProperty(CHG_LAYER, "visibility", on ? "visible" : "none");
+  }
+  if (on) void loadChanges();
+}
+
+async function loadChanges(): Promise<void> {
+  const list = document.getElementById("changes-list");
+  if (list) list.innerHTML = `<div class="spinner">// lade Änderungen …</div>`;
+  let data: { count: number; changes: ChangeItem[] };
+  try {
+    const res = await fetch(`${API_BASE}/changes`, { credentials: "include" });
+    if (!res.ok) throw new Error(String(res.status));
+    data = (await res.json()) as { count: number; changes: ChangeItem[] };
+  } catch {
+    if (list) list.innerHTML = `<div class="panel-empty">Änderungen nicht ladbar.</div>`;
+    return;
+  }
+
+  // Karten-Highlight aus den Änderungen.
+  const src = map.getSource(CHG_SRC) as maplibregl.GeoJSONSource | undefined;
+  src?.setData({
+    type: "FeatureCollection",
+    features: data.changes.map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
+      properties: { event_type: c.event_type },
+    })),
+  });
+
+  // Zähler im Header.
+  const badge = document.getElementById("changes-count");
+  if (badge) {
+    badge.textContent = String(data.count);
+    badge.toggleAttribute("hidden", data.count === 0);
+  }
+  renderChangesList(data.changes);
+}
+
+function renderChangesList(changes: ChangeItem[]): void {
+  const list = document.getElementById("changes-list");
+  if (!list) return;
+  if (!changes.length) {
+    list.innerHTML = `<div class="panel-empty">Keine Änderungen in den letzten 7 Tagen.</div>`;
+    return;
+  }
+  list.innerHTML = changes
+    .map((c, idx) => {
+      const ev = EVENT_META[c.event_type] ?? { label: c.event_type, color: ACCENT };
+      const cat = CATEGORY_BY_ID[c.category];
+      const catLabel = cat?.label ?? c.category;
+      const sub = c.subtype ? ` · ${escapeHtml(subtypeLabel(c.subtype))}` : "";
+      return `<button class="chg-row" data-i="${idx}">
+          <span class="chg-badge" style="color:${ev.color};border-color:${ev.color}">${escapeHtml(ev.label)}</span>
+          <span class="chg-body">
+            <span class="chg-cat">${escapeHtml(catLabel)}${sub}</span>
+            <span class="chg-when">${formatDate(c.observed_at)} · ${c.osm_type}/${c.osm_id}</span>
+          </span>
+        </button>`;
+    })
+    .join("");
+
+  list.querySelectorAll<HTMLElement>(".chg-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      const c = changes[Number(row.dataset.i)];
+      if (!c) return;
+      map.flyTo({ center: [c.lon, c.lat], zoom: Math.max(map.getZoom(), 13) });
+      selected = { type: c.osm_type, id: c.osm_id };
+      applyFilters();
+      void openPanel(c.osm_type, c.osm_id);
+    });
+  });
 }
 
 // --- Polling: Ingest-Status + neuer Stand -----------------------------------

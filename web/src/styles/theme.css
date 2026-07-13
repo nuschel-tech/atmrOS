@@ -94,6 +94,51 @@ html, body {
 .hud-top .brand { font-weight: 700; letter-spacing: 0.02em; }
 .hud-top .brand .os { color: var(--atmr-pink); }
 .hud-top .sub { color: var(--text-2); font-size: 12px; font-family: var(--mono); }
+.hud-btn {
+  margin-left: 6px; display: inline-flex; align-items: center; gap: 7px;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--text-1);
+  border-radius: 10px; padding: 6px 12px; font-family: var(--mono);
+  font-size: 12px; cursor: pointer;
+}
+.hud-btn:hover { color: var(--text-0); border-color: var(--text-2); }
+.hud-btn[aria-pressed="true"] { color: var(--atmr-pink); border-color: var(--atmr-pink); }
+.hud-badge {
+  background: var(--atmr-pink); color: #0a0a0a; border-radius: 999px;
+  font-size: 10px; font-weight: 700; padding: 1px 6px; line-height: 1.4;
+}
+.hud-badge[hidden] { display: none; }
+
+/* --- Änderungen-Drawer (links) ------------------------------------------- */
+.changes-drawer {
+  position: absolute; top: 0; left: 0; z-index: 6;
+  width: min(380px, 92vw); height: 100%;
+  background: var(--bg-1); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+}
+.changes-drawer[hidden] { display: none; }
+.changes-head {
+  padding: 16px 18px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700;
+}
+.changes-head .changes-since {
+  font-size: 11px; font-weight: 400; color: var(--text-2); font-family: var(--mono);
+}
+.changes-head .close { margin-left: auto; }
+.changes-list { overflow-y: auto; padding: 8px 10px 20px; }
+.chg-row {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  background: transparent; border: 0; border-bottom: 1px solid var(--line);
+  padding: 9px 8px; cursor: pointer; text-align: left;
+}
+.chg-row:hover { background: var(--bg-2); }
+.chg-badge {
+  flex: 0 0 auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  border: 1px solid; border-radius: 5px; padding: 2px 6px; margin-top: 1px;
+}
+.chg-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.chg-cat { color: var(--text-0); font-size: 13px; }
+.chg-when { color: var(--text-2); font-family: var(--mono); font-size: 11px; }
 
 /* --- Legende -------------------------------------------------------------- */
 .legend {

@@ -18,7 +18,18 @@ import "../styles/theme.css";
     <header class="hud-top">
       <div class="brand">atmr<span class="os">OS</span></div>
       <div class="sub">// Infrastruktur Bayern · eine Ebene · mit Quelle</div>
+      <button id="changes-toggle" class="hud-btn" aria-pressed="false">
+        Änderungen<span id="changes-count" class="hud-badge" hidden></span>
+      </button>
     </header>
+
+    <section id="changes" class="changes-drawer" hidden aria-label="Änderungen">
+      <div class="changes-head">
+        <span>Änderungen <span class="changes-since">· letzte 7 Tage</span></span>
+        <button id="changes-close" class="close" aria-label="Schließen">×</button>
+      </div>
+      <div id="changes-list" class="changes-list"></div>
+    </section>
 
     <aside class="legend">
       <h4>Ebene · Filter</h4>
