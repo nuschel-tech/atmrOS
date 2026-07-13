@@ -101,6 +101,16 @@ volle Bayern-PBF verifiziert: 94.780 Objekte)
 **Nachgezogen:** osmium-4.x-Fix, RAM-schonender Node-Index, Untertyp-Erfassung
 (Ehrlichkeit: Kirchturm ≠ Sendemast), Login-Gate (Coming-soon bis Launch),
 selbst gehostete Basemap. ✅
-**Schritt 2:** systemd-Timer (Nightly-Ingest) + Diff-Logik (`change_event`:
-NEW/CHANGED/DELETED/RESTORED) + Archiv-/Änderungsansicht. Das Schema dafür
-steht bereits (`change_event`), die Tabelle ist noch leer.
+**Schritt 2:** ✅ gebaut —
+- **Diff/Gedächtnis:** jeder Ingest leitet `change_event` ab
+  (NEU/GEÄNDERT/GELÖSCHT/WIEDER); `object.present` markiert Verschwundenes statt
+  zu löschen. Live-Ansichten (`/tiles`, `/stats`) filtern `present`.
+- **Nightly-Timer:** Last-Modified-gesteuert (`--if-modified` + systemd-Timer,
+  alle 2 h) — holt nur bei echtem neuen Stand. Siehe `docs/DEPLOY.md`.
+- **Änderungsansicht:** `/changes` + Header-Button „Änderungen" (Liste +
+  Pink-Highlight auf der Karte).
+- **Aktualisierungs-UX:** „Daten werden aktualisiert"-Banner während des
+  Ingests, „neuer Stand"-Toast danach (Tile-Version `?v=`, kein Reload nötig).
+
+Erster echter Diff-Lauf passiert beim nächsten Ingest auf dem Server
+(die reine Diff-Logik ist per Unit-Test abgedeckt).
