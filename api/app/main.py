@@ -68,7 +68,7 @@ _MVT_SQL = text(
             o.category,
             o.subtype
         FROM object o, bounds
-        WHERE o.geom && bounds.b4326
+        WHERE o.present AND o.geom && bounds.b4326
     )
     SELECT ST_AsMVT(mvt.*, 'infra', 4096, 'geom') AS tile
     FROM mvt
@@ -163,13 +163,14 @@ _REFINED = ("substation", "tower", "mast")
 def stats() -> dict:
     with get_engine().connect() as conn:
         by_cat = conn.execute(text(
-            "SELECT category, count(*) AS n FROM object GROUP BY category ORDER BY n DESC"
+            "SELECT category, count(*) AS n FROM object WHERE present "
+            "GROUP BY category ORDER BY n DESC"
         )).all()
         by_sub = conn.execute(text(
             """
             SELECT category, subtype, count(*) AS n
             FROM object
-            WHERE category = ANY(:cats)
+            WHERE present AND category = ANY(:cats)
             GROUP BY category, subtype
             ORDER BY n DESC
             """

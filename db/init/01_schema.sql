@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS object (
     -- Kirchturm (tower:type=bell_tower) darf nicht als Sendemast durchgehen,
     -- eine Ortsnetzstation (substation=minor_distribution) nicht als Umspannwerk.
     subtype    text,
+    -- present: war das Objekt im letzten Scan sichtbar? Verschwundene Objekte
+    -- werden NICHT gelöscht (Historie bleibt), sondern present=false gesetzt
+    -- (DELETED). Kommt es zurück -> RESTORED. Live-Ansicht filtert present.
+    present    boolean               NOT NULL DEFAULT true,
     first_seen timestamptz           NOT NULL,
     last_seen  timestamptz           NOT NULL,
     geom       geometry(Point, 4326) NOT NULL,

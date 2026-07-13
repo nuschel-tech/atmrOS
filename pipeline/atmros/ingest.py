@@ -113,9 +113,11 @@ def run(pbf_arg: str | None, dry_run: bool) -> dict:
         db.ensure_schema(engine)  # idempotente Migration (z.B. subtype-Spalte)
         summary = db.write_run(engine, records, observed_at,
                                config.SOURCE, source_url)
-        log.info("PostGIS: %d Objekte, %d neue Beobachtungen, %d unverändert",
+        log.info("PostGIS: %d Objekte, %d neue Beobachtungen | Diff: "
+                 "NEU %d · GEÄNDERT %d · GELÖSCHT %d · WIEDER %d · unverändert %d",
                  summary["objects"], summary["observations_inserted"],
-                 summary["observations_unchanged"])
+                 summary["new"], summary["changed"], summary["deleted"],
+                 summary["restored"], summary["unchanged"])
         summary["counts"] = handler.counts
         summary["observed_at"] = observed_at.isoformat()
         return summary
