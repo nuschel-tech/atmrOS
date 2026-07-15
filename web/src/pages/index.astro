@@ -1,0 +1,62 @@
+---
+import "../styles/theme.css";
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>atmrOS — Infrastruktur Bayern</title>
+  </head>
+  <body>
+    <!-- atmrOS — das ehrliche ctOS. Dunkle Karte Bayerns, eine Infrastruktur-
+         Ebene, Klick öffnet den Profiler mit Quelle + Stand-Datum. -->
+    <div id="map"></div>
+
+    <header class="hud-top">
+      <div class="brand">atmr<span class="os">OS</span></div>
+      <div class="sub">// Infrastruktur Bayern · eine Ebene · mit Quelle</div>
+      <button id="changes-toggle" class="hud-btn" aria-pressed="false">
+        Änderungen<span id="changes-count" class="hud-badge" hidden></span>
+      </button>
+    </header>
+
+    <section id="changes" class="changes-drawer" hidden aria-label="Änderungen">
+      <div class="changes-head">
+        <span>Änderungen <span class="changes-since">· letzte 7 Tage</span></span>
+        <button id="changes-close" class="close" aria-label="Schließen">×</button>
+      </div>
+      <div id="changes-list" class="changes-list"></div>
+    </section>
+
+    <aside class="legend">
+      <h4>Ebene · Filter</h4>
+      <div id="legend-body"><div class="lg-hint">// lade Zähler …</div></div>
+    </aside>
+
+    <section id="panel" class="panel" aria-live="polite">
+      <div class="panel-head">
+        <div id="panel-head-content" class="title"></div>
+        <button id="panel-close" class="close" aria-label="Schließen">×</button>
+      </div>
+      <div id="panel-body" class="panel-body"></div>
+    </section>
+
+    <div id="updating" class="updating" role="status" hidden>
+      <span class="updating-dot"></span>
+      <span>// Daten werden aktualisiert …</span>
+    </div>
+
+    <div id="toast" class="toast" role="status" hidden>
+      <span class="toast-msg">// neuer Stand verfügbar</span>
+      <button id="toast-apply" class="toast-btn">aktualisieren</button>
+    </div>
+
+    <script>
+      import { initMap } from "../lib/map";
+      initMap().catch((e) => console.error("atmrOS map init failed", e));
+    </script>
+  </body>
+</html>

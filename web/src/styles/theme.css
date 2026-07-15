@@ -1,0 +1,270 @@
+/* atmrOS Design-System — Dark, technisch, ctOS-Anmutung, aber lesbar & ernst.
+   Akzent Pink #e31c8d sparsam (echte Auffälligkeiten). Font Switzer, Squircle. */
+
+:root {
+  --atmr-pink: #e31c8d;
+  --bg-0: #0a0c10; /* Karten-/Seiten-Grund */
+  --bg-1: #12151b; /* Panel-Grund */
+  --bg-2: #1b1f27; /* Zeilen/Chips */
+  --line: #262b34;
+  --text-0: #e8ecf2;
+  --text-1: #aab2bf;
+  --text-2: #6b7382;
+  --radius: 14px; /* Squircle-Annäherung */
+  --radius-sm: 10px;
+  --mono: "Switzer", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --sans: "Switzer", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Switzer liegt im Design-System des Betriebs. Dateien nach web/public/fonts
+   legen, dann greift dies; sonst sauberer System-Fallback (oben). */
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/Switzer-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+#map { position: absolute; inset: 0; }
+
+/* --- Toast "neuer Stand verfügbar" --------------------------------------- */
+.toast {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 7; display: flex; align-items: center; gap: 12px;
+  padding: 9px 10px 9px 15px;
+  background: color-mix(in srgb, var(--bg-1) 92%, transparent);
+  border: 1px solid var(--atmr-pink); border-radius: 999px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  font-family: var(--mono); font-size: 12.5px; color: var(--text-0);
+}
+.toast[hidden] { display: none; }
+
+/* --- "Daten werden aktualisiert"-Banner (oben mittig, nicht blockierend) -- */
+.updating {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  z-index: 7; display: flex; align-items: center; gap: 9px;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--bg-1) 88%, transparent);
+  border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(8px);
+  font-family: var(--mono); font-size: 12px; color: var(--text-1);
+}
+.updating[hidden] { display: none; }
+.updating .updating-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--atmr-pink);
+  box-shadow: 0 0 0 0 rgba(227, 28, 141, 0.6);
+  animation: updatePulse 1.6s infinite;
+}
+@keyframes updatePulse {
+  0% { box-shadow: 0 0 0 0 rgba(227, 28, 141, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(227, 28, 141, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(227, 28, 141, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .updating .updating-dot { animation: none; } }
+.toast .toast-msg { letter-spacing: 0.02em; }
+.toast .toast-btn {
+  background: var(--atmr-pink); border: 0; border-radius: 999px;
+  color: #0a0a0a; font-family: var(--mono); font-weight: 700; font-size: 12px;
+  padding: 5px 13px; cursor: pointer;
+}
+.toast .toast-btn:hover { filter: brightness(1.08); }
+
+/* --- Header / Marke ------------------------------------------------------- */
+.hud-top {
+  position: absolute; top: 14px; left: 14px; z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--bg-1) 82%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+.hud-top .brand { font-weight: 700; letter-spacing: 0.02em; }
+.hud-top .brand .os { color: var(--atmr-pink); }
+.hud-top .sub { color: var(--text-2); font-size: 12px; font-family: var(--mono); }
+.hud-btn {
+  margin-left: 6px; display: inline-flex; align-items: center; gap: 7px;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--text-1);
+  border-radius: 10px; padding: 6px 12px; font-family: var(--mono);
+  font-size: 12px; cursor: pointer;
+}
+.hud-btn:hover { color: var(--text-0); border-color: var(--text-2); }
+.hud-btn[aria-pressed="true"] { color: var(--atmr-pink); border-color: var(--atmr-pink); }
+.hud-badge {
+  background: var(--atmr-pink); color: #0a0a0a; border-radius: 999px;
+  font-size: 10px; font-weight: 700; padding: 1px 6px; line-height: 1.4;
+}
+.hud-badge[hidden] { display: none; }
+
+/* --- Änderungen-Drawer (links) ------------------------------------------- */
+.changes-drawer {
+  position: absolute; top: 0; left: 0; z-index: 6;
+  width: min(380px, 92vw); height: 100%;
+  background: var(--bg-1); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+}
+.changes-drawer[hidden] { display: none; }
+.changes-head {
+  padding: 16px 18px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700;
+}
+.changes-head .changes-since {
+  font-size: 11px; font-weight: 400; color: var(--text-2); font-family: var(--mono);
+}
+.changes-head .close { margin-left: auto; }
+.changes-list { overflow-y: auto; padding: 8px 10px 20px; }
+.chg-row {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%;
+  background: transparent; border: 0; border-bottom: 1px solid var(--line);
+  padding: 9px 8px; cursor: pointer; text-align: left;
+}
+.chg-row:hover { background: var(--bg-2); }
+.chg-badge {
+  flex: 0 0 auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  border: 1px solid; border-radius: 5px; padding: 2px 6px; margin-top: 1px;
+}
+.chg-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.chg-cat { color: var(--text-0); font-size: 13px; }
+.chg-when { color: var(--text-2); font-family: var(--mono); font-size: 11px; }
+
+/* --- Legende -------------------------------------------------------------- */
+.legend {
+  position: absolute; bottom: 14px; left: 14px; z-index: 5;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--bg-1) 82%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  font-size: 12px;
+}
+.legend h4 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2);
+}
+#legend-body { max-height: min(56vh, 460px); overflow-y: auto; }
+.lg-hint { color: var(--text-2); font-family: var(--mono); font-size: 11px; }
+.legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.legend .count { margin-left: auto; color: var(--text-2); font-family: var(--mono); }
+
+.lg-group { margin-bottom: 1px; }
+
+/* Klickbare Kategorie-Zeile (Filter-Toggle). */
+.lg-cat {
+  display: flex; align-items: center; gap: 8px; padding: 3px 4px;
+  border-radius: 8px; cursor: pointer; user-select: none;
+}
+.lg-cat:hover { background: var(--bg-2); }
+
+/* Aufklapp-Pfeil am Zeilenende (klappt die Untertypen auf/zu). */
+.lg-arrow {
+  flex: 0 0 auto; width: 22px; height: 20px; margin-left: 2px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: var(--text-1); font-size: 15px; line-height: 1; border-radius: 6px;
+}
+.lg-arrow:hover { color: var(--atmr-pink); background: var(--bg-2); }
+.lg-arrow[aria-expanded="true"] { color: var(--text-0); }
+
+/* Untertyp-Container — eingeklappt via [hidden]. */
+.lg-subs { margin: 1px 0 4px; }
+
+/* Untertyp-Zeile, eingerückt. */
+.lg-sub {
+  display: flex; align-items: center; gap: 8px; padding: 2px 4px 2px 25px;
+  border-radius: 8px; cursor: pointer; user-select: none; font-size: 11.5px;
+  color: var(--text-1);
+}
+.lg-sub:hover { background: var(--bg-2); }
+.lg-sub .lbl { font-family: var(--mono); }
+
+/* Ausgeblendet: gedämpft + durchgestrichen — sichtbar, nicht verschwunden. */
+.lg-cat.off, .lg-sub.off { opacity: 0.4; text-decoration: line-through; }
+/* Hauptkategorie aus -> alle Untertypen durchgestrichen (aber weiter klickbar:
+   ein Klick isoliert genau diesen Untertyp und schaltet die Kategorie an). */
+.lg-group.cat-off .lg-sub { opacity: 0.4; text-decoration: line-through; }
+.lg-group.cat-off .lg-sub:hover { opacity: 0.7; }
+.lg-cat:focus-visible, .lg-sub:focus-visible, .lg-arrow:focus-visible {
+  outline: 1px solid var(--atmr-pink); outline-offset: 1px;
+}
+
+/* --- Profiler-Panel ------------------------------------------------------- */
+.panel {
+  position: absolute; top: 0; right: 0; z-index: 6;
+  width: min(400px, 92vw); height: 100%;
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+  transform: translateX(105%);
+  transition: transform 0.18s ease;
+  display: flex; flex-direction: column;
+}
+.panel.open { transform: translateX(0); }
+
+.panel-head {
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; gap: 10px;
+}
+#panel-head-content { display: flex; align-items: flex-start; gap: 10px; flex: 1; }
+.panel-head .cat-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; flex: 0 0 auto; }
+.panel-head .title { flex: 1; }
+.panel-head .cat { font-size: 16px; font-weight: 700; }
+.panel-head .id { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+.panel-head .id .sub { color: var(--text-1); }
+.panel-head .close {
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--text-1);
+  border-radius: var(--radius-sm); width: 30px; height: 30px; cursor: pointer;
+  font-size: 16px; line-height: 1;
+}
+.panel-head .close:hover { color: var(--text-0); border-color: var(--text-2); }
+
+.panel-body { overflow-y: auto; padding: 14px 18px 24px; }
+
+/* Quelle prominent — die Kern-Signatur von atmrOS. */
+.source-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--atmr-pink);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px; margin-bottom: 16px;
+}
+.source-card .k {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-2); font-family: var(--mono);
+}
+.source-card .v { font-size: 13px; color: var(--text-0); margin-top: 2px; }
+.source-card .v a { color: var(--atmr-pink); text-decoration: none; }
+.source-card .v a:hover { text-decoration: underline; }
+.source-card .split { display: flex; gap: 18px; margin-top: 10px; }
+
+.section-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-2); font-family: var(--mono); margin: 4px 0 8px;
+}
+
+/* Attribut-Reihen, Terminal-Anmutung. */
+.attrs { font-family: var(--mono); font-size: 12.5px; }
+.attr-row {
+  display: grid; grid-template-columns: minmax(0, 40%) 1fr; gap: 10px;
+  padding: 6px 0; border-bottom: 1px dashed var(--line);
+}
+.attr-row .k { color: var(--text-2); overflow-wrap: anywhere; }
+.attr-row .val { color: var(--text-0); overflow-wrap: anywhere; }
+.attr-row .val a { color: var(--atmr-pink); text-decoration: none; }
+
+.panel-empty { color: var(--text-2); font-size: 13px; padding: 24px 0; text-align: center; }
+
+.hist { color: var(--text-2); font-family: var(--mono); font-size: 11px; margin-top: 16px; }
+
+.spinner { color: var(--text-2); font-family: var(--mono); font-size: 12px; padding: 24px 0; }

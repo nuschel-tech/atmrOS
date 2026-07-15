@@ -1,0 +1,13 @@
+# atmrOS Ingest — Einmal-Job, vom Timer gestartet.
+# WorkingDirectory auf dein geklontes Projektverzeichnis anpassen.
+[Unit]
+Description=atmrOS Ingest (Last-Modified-gesteuert)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/atmros
+# --if-modified: lädt/verarbeitet nur, wenn Geofabrik einen neueren Stand hat.
+ExecStart=/usr/bin/docker compose run --rm ingest --if-modified
+TimeoutStartSec=1800

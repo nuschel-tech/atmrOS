@@ -116,12 +116,13 @@ diesem Umfeld erprobt und stabil sind.
 
 ### Datenpipeline (Schritt 1–6)
 - **Sprache:** Python 3.12
-- **PBF-Parsing:** `pyosmium` (schnell, C++-Kern, streamt das PBF ohne alles in RAM zu laden)
+- **PBF-Parsing:** `osmium` (PyPI-Paket, Import `import osmium`; schnell, C++-Kern, streamt das PBF ohne alles in RAM zu laden)
 - **DB-Zugriff:** `psycopg` (v3) + `SQLAlchemy` Core
 - **Orchestrierung:** simples Python-Script + **systemd-Timer** auf dem Hetzner
   (kein Airflow o.ä. — Overkill; die Kette soll simpel und lückenlos sein, nicht fancy)
 - **Rohdaten-Archiv:** jedes Tages-PBF-Extrakt der gefilterten Objekte als
-  komprimiertes GeoParquet ablegen + SHA-256 in `manifest.jsonl` (Beweis-Kette,
+  komprimiertes Parquet ablegen (lon/lat als float64-Spalten, reines pyarrow —
+  keine geopandas/GDAL-Kette) + SHA-256 in `manifest.jsonl` (Beweis-Kette,
   unveränderlich). Nur die gefilterten Objekte, nicht das 806-MB-Vollextrakt behalten.
 
 ### Datenbank
@@ -195,7 +196,7 @@ Der Betreiber hat ein einheitliches CI über alle MultaEnhavo-Projekte:
 Ziel: **einmal die ganze Kette durchlaufen sehen**, noch ohne Gedächtnis/Nightly.
 
 1. Projekt-Grundgerüst: Docker-Compose mit PostGIS + FastAPI + Astro
-2. `ingest.py`: Bayern-PBF laden → mit pyosmium die o.g. Objekttypen filtern →
+2. `ingest.py`: Bayern-PBF laden → mit osmium die o.g. Objekttypen filtern →
    in `object` + erste `observation` schreiben (mit `source='osm/geofabrik'`,
    `source_url` = Geofabrik-URL, `observed_at` = PBF `last-modified`)
 3. FastAPI: `/tiles/{z}/{x}/{y}.pbf` via `ST_AsMVT` + `/object/{type}/{id}`

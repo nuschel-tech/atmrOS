@@ -1,0 +1,18 @@
+# atmrOS Ingest-Timer.
+#
+# Geofabrik veröffentlicht den Bayern-Extrakt NICHT zuverlässig um 01:00 —
+# real gemessen zwischen ~01:30 und vormittags (Regional-Extrakte entstehen
+# nach dem Länder-PBF). Deshalb NICHT an eine feste Uhrzeit binden, sondern oft
+# laufen: der Ingest prüft per HEAD (--if-modified) und macht nur bei echtem
+# neuen Stand die schwere Arbeit (Download + Parse). Die übrigen Läufe sind ein
+# billiger HEAD-Request.
+[Unit]
+Description=atmrOS Ingest alle 2 Stunden (holt nur bei neuem Stand)
+
+[Timer]
+# Alle 2 Stunden (ungerade Stunden, :17). Persistent: verpasste Läufe nachholen.
+OnCalendar=*-*-* 01/2:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

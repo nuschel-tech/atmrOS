@@ -1,0 +1,8 @@
+# PyPI-Paketname ist "osmium" (Import bleibt `import osmium`); "pyosmium"
+# existiert auf PyPI nicht mehr. Pin >=4.3: dort verifizierte TagList-4.x-API
+# (get()/__contains__/__len__, kein keys()); <4 hätte die alte 3.x-API erzwungen.
+osmium>=4.3,<5
+SQLAlchemy>=2.0,<3
+psycopg[binary]>=3.1,<4
+pyarrow>=15
+requests>=2.31
