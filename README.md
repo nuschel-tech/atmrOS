@@ -1,116 +1,152 @@
-# atmrOS — Schritt 1
+<div align="center">
 
-**Das ehrliche ctOS.** Eine dunkle Karte Bayerns, die offene Geodatenquellen zu
-*einer* Infrastruktur-Ebene verschmilzt. Jede Anzeige trägt ihre Quelle + ihr
-Stand-Datum. Konzept & Grundregeln: siehe [`CLAUDE.md`](./CLAUDE.md).
+# atmrOS
 
-Dies ist **Schritt 1**: die Kette einmal sichtbar durchlaufen —
-`SAMMELN → FILTERN → ROHLAGER → SPEICHERN → ZEIGEN`. Noch ohne Nightly/Diff
-(das ist Schritt 2).
+**Das ehrliche ctOS.** Eine dunkle Karte Bayerns, die offene Geodaten zu *einer*
+Infrastruktur-Ebene verschmilzt — mit Gedächtnis, und jede Anzeige nennt ihre Quelle.
 
-## Die Kette in diesem Repo
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)
+![PostGIS](https://img.shields.io/badge/DB-PostGIS%2016-336791?logo=postgresql&logoColor=white)
+![Astro](https://img.shields.io/badge/Web-Astro%20SSR-BC52EE?logo=astro&logoColor=white)
+![MapLibre](https://img.shields.io/badge/Karte-MapLibre%20GL-396CB2?logo=maplibre&logoColor=white)
+![Daten: ODbL](https://img.shields.io/badge/Daten-ODbL%20·%20OpenStreetMap-7EBC6F)
+
+</div>
+
+<!-- Screenshot: docs/screenshot.png ablegen (dunkle Karte + Profiler-Panel). -->
+![atmrOS — Karte Bayerns mit Infrastruktur-Ebene und Profiler-Panel](docs/screenshot.png)
+
+---
+
+## Was ist atmrOS?
+
+Wie das *ctOS* aus **Watch Dogs** — nur ehrlich. atmrOS legt die unsichtbare
+Verkabelung einer Region als **ein** Gesamtbild auf eine dunkle Karte:
+Sendemasten, Strommasten, Umspannwerke, Ladesäulen, Überwachungskameras,
+Türme, Tankstellen. Kein Single-Purpose-Finder, sondern die **Verknüpfung**
+vieler offener Quellen zu einer Ebene.
+
+Drei Dinge machen es aus:
+
+- **Eine Ebene.** Verschiedene Objekttypen aus OpenStreetMap, verschmolzen und
+  gemeinsam filterbar — nicht sieben getrennte Apps.
+- **Mit Gedächtnis.** Es wird nie ein *Zustand* gespeichert, sondern immer
+  **Beobachtungen mit Zeitstempel**. Daraus fallen Live-Ansicht, Archiv und
+  **Änderungen über Zeit** (NEU / GEÄNDERT / GELÖSCHT / WIEDER) aus *einer* Tabelle.
+- **Ehrlich.** Jedes Objekt trägt im Profiler-Panel seine **Quelle + Stand-Datum**
+  und einen Deep-Link zurück zu OpenStreetMap. Und es misst nur **Systeme, nie
+  Menschen** — eine Überwachungskamera ist ein Objekt; wer gefilmt wird, ist es nie.
+
+> Ehrlichkeit im Detail: Ein Kirchturm läuft hier **nicht** als „Sendemast"
+> durch. `man_made=tower`/`mast` und `power=substation` sind zu grob, deshalb
+> erfasst atmrOS den Untertyp (`tower:type`, `substation`) und macht ihn
+> filterbar — Kirch-/Wehrtürme, Ortsnetzstationen usw. sind klar getrennt.
+
+## Die Kette
+
+Das Herzstück ist eine lückenlose Pipeline:
 
 ```
-pipeline/  SAMMELN + FILTERN + ROHLAGER + SPEICHERN
-           Bayern-PBF -> osmium-Filter -> Parquet+Hash -> PostGIS
-db/        Kernschema (object / observation / change_event)
-api/       FastAPI: Vektor-Tiles (ST_AsMVT) + /object-Panel + /stats
-web/       Astro + MapLibre: dunkle Karte, Klick -> Profiler-Panel mit Quelle
+1. SAMMELN     Geofabrik Bayern-PBF laden (Last-Modified-gesteuert)
+2. FILTERN     relevante Objekttypen extrahieren (osmium)
+3. ROHLAGER    gefilterte Objekte als Parquet + SHA-256-Manifest (unantastbar)
+4. SPEICHERN   als zeitgestempelte Beobachtungen in PostGIS
+5. VERKNÜPFEN  alle Objekte in EINER Ebene
+6. ERINNERN    Diff gegen letzten Scan → change_event
+7. ZEIGEN      dunkle Vektorkarte, Klick → Profiler-Panel mit Quelle
 ```
 
-## Starten (Hetzner / lokal mit Docker)
+## Architektur
+
+| Dienst | Rolle |
+|--------|-------|
+| **pipeline** (Python + osmium) | SAMMELN · FILTERN · ROHLAGER · SPEICHERN · ERINNERN |
+| **db** (PostgreSQL 16 + PostGIS 3.4) | `object` / `observation` / `change_event` |
+| **api** (FastAPI) | Vektor-Tiles via `ST_AsMVT`, Objekt-Panel, Stats, Änderungen |
+| **web** (Astro SSR + MapLibre GL) | dunkle Karte, Filter-Legende, Profiler-Panel, Änderungsansicht |
+
+```
+pipeline/   Ingest (osmium) + Diff-Logik + Rohlager
+db/init/    Kernschema
+api/app/    FastAPI-Endpunkte
+web/src/    Astro-Seiten + MapLibre-Logik
+deploy/     systemd-Timer für den Nightly-Ingest
+docs/       DEPLOY.md · BASEMAP.md
+```
+
+## Schnellstart
+
+Voraussetzung: Docker + Docker Compose.
 
 ```bash
-cp .env.example .env          # POSTGRES_PASSWORD u.a. anpassen
+cp .env.example .env      # Secrets erzeugen (siehe Kommentare in der Datei)
 docker compose up -d db api web
-docker compose run --rm ingest        # einmal die Kette laufen lassen
+docker compose run --rm ingest        # einmal die ganze Kette laufen lassen
 ```
 
-Dann `http://localhost:4321` öffnen. **Achtung:** standardmäßig ist das
-Login-Gate aktiv (`ATMROS_LAUNCHED=false`) — du siehst die **Coming-soon-Seite**.
-Zum Entsperren `ATMROS_SESSION_SECRET` und `ATMROS_UNLOCK_PASSWORD_HASH` in `.env`
-setzen (siehe `.env.example`) und `/unlock` mit dem Passwort aufrufen. Danach:
-dunkle Karte Bayerns, Infrastruktur als Punkte, **Klick auf ein Objekt → Panel
-mit Attributen + Quelle + Stand-Datum.** Das ist das Erfolgskriterium aus
-`CLAUDE.md`. Launch-Tag: `ATMROS_LAUNCHED=true` + Container neu starten.
+Standardmäßig ist ein **Login-Gate** aktiv (`ATMROS_LAUNCHED=false`) → man sieht
+eine Coming-soon-Seite; über `/unlock` mit Passwort kommt man an die App.
+Vollständige Anleitung (Reverse-Proxy, Timer, TLS): **[`docs/DEPLOY.md`](./docs/DEPLOY.md)**.
 
-> Der `ingest`-Lauf lädt das ~806 MB Bayern-PBF und braucht beim ersten Mal
-> einige Minuten (Download + Parse + Schreiben). Fortschritt im Log:
-> `docker compose run --rm ingest` gibt Zähler pro Kategorie aus.
-
-## Endpunkte der API
+### API-Endpunkte
 
 | Endpunkt | Zweck |
 |----------|-------|
-| `GET /tiles/{z}/{x}/{y}.pbf` | Mapbox Vector Tile via `ST_AsMVT` |
+| `GET /tiles/{z}/{x}/{y}.pbf` | Mapbox Vector Tile (`ST_AsMVT`), nur sichtbare Objekte |
 | `GET /object/{osm_type}/{osm_id}` | Panel-Daten inkl. Historie + Quelle |
-| `GET /stats` | Counts pro Kategorie **und Untertyp** (füllt die Legende) |
-| `GET /health` | Liveness (immer offen) |
+| `GET /stats` | Counts pro Kategorie **und Untertyp** + aktueller Stand |
+| `GET /changes?since=` | Änderungen (`change_event`) für die Änderungsansicht |
+| `GET /status` | ob gerade ein Ingest läuft |
+| `GET /health` | Liveness |
 
-Alle Endpunkte außer `/health` sind hinter demselben Cookie-Gate wie das
-Frontend (deaktiviert, sobald `ATMROS_LAUNCHED=true`).
+## Datenmodell — ein Modell, drei Ansichten
 
-## Datenmodell (ein Modell, drei Ansichten)
+Eine neue `observation`-Zeile entsteht nur, wenn sich der Attribut-Hash gegenüber
+der letzten Beobachtung ändert. Re-Runs desselben Extrakts erzeugen also keine
+Dubletten. Verschwundene Objekte werden **nicht gelöscht**, sondern als abwesend
+markiert (`present=false`) — kommt ein Objekt zurück, ist das ein *WIEDER*-Ereignis.
 
-Es wird nie ein *Zustand* gespeichert, sondern **Beobachtungen mit Zeitstempel**.
-Eine neue `observation`-Zeile entsteht nur, wenn sich der `attr_hash` gegenüber
-der letzten Beobachtung ändert — re-Runs desselben Extrakts erzeugen also keine
-Dubletten. Daraus fallen später Live / Archiv / Änderungen aus *einer* Tabelle.
+- **Live** = neueste Beobachtung je Objekt (nur präsente)
+- **Archiv** = alle Beobachtungen über Zeit
+- **Änderungen** = Differenz zweier aufeinanderfolgender Scans
 
-## Konfiguration
+## Datenquellen & Lizenz
 
-Alles über `.env` (siehe `.env.example`). Wichtige Schalter:
+- **Geodaten:** [OpenStreetMap](https://www.openstreetmap.org/) via
+  [Geofabrik](https://download.geofabrik.de/) (Bayern-Extrakt).
+  Lizenz **ODbL** — „**© OpenStreetMap-Mitwirkende**". Diese Namensnennung ist
+  in der App eingebaut und bei jeder Weiterverwendung erforderlich.
+- **Basemap:** selbst gehostete [Protomaps](https://protomaps.com/)-Kacheln
+  (`.pmtiles`), Style im Repo unter `web/public/basemap/`. Siehe
+  [`docs/BASEMAP.md`](./docs/BASEMAP.md).
 
-- **`PUBLIC_API_BASE`** — öffentliche API-URL für den Browser (Build-Zeit).
-- **Basemap** — selbst gehostete Protomaps-Kacheln über `PUBLIC_PMTILES_URL`
-  (+ `PUBLIC_GLYPHS_URL`), Style im Repo unter `web/public/basemap/style.json`.
-  Anleitung zum Erzeugen/Hochladen: [`docs/BASEMAP.md`](./docs/BASEMAP.md).
-- **Login-Gate** — `ATMROS_LAUNCHED`, `ATMROS_UNLOCK_PASSWORD_HASH` (bcrypt),
-  `ATMROS_SESSION_SECRET` (gleich für web **und** api). Details in `.env.example`.
-- **Node-Index** — `ATMROS_OSM_INDEX` (Default `sparse_file_array`, RAM-schonend;
-  `flex_mem` schneller, aber ~2,1 GB für Bayern).
+## Grundregeln (nicht verhandelbar)
 
-## Grundregeln (aus CLAUDE.md, hier umgesetzt)
+1. **Systeme messen, niemals Menschen.** Nur Infrastruktur-Objekte, keine Personendaten.
+2. **Jede Anzeige trägt ihre Quelle + Stand-Datum.** Die Kern-Signatur des Projekts.
+3. **Das Rohlager ist unantastbar.** Einmal geschrieben, nie verändert — SHA-256-Kette als Beweis.
+4. **Lückenlosigkeit vor Features.** Der Ingest schreibt in *einer* Transaktion; bei Fehler bricht die Kette sauber ab, statt halb zu committen.
 
-1. **Systeme messen, nie Menschen** — nur Infrastruktur-Objekte, keine Personendaten.
-2. **Jede Anzeige trägt Quelle + Stand-Datum** — prominent im Panel, plus OSM-Deep-Link.
-3. **Rohlager unantastbar** — jeder Lauf schreibt Parquet + SHA-256 in
-   `manifest.jsonl`; bestehende Dateien werden nie überschrieben.
-4. **Lückenlosigkeit vor Features** — der Ingest schreibt in *einer* Transaktion;
-   bei Fehler Exit-Code ≠ 0, nie halb-fertig stillschweigend committen.
+## Status
 
-## Lokal ohne Docker entwickeln (Auszüge)
+**Schritt 1 – die Kette läuft.** ✅ Real gegen das volle Bayern-PBF verifiziert
+(94.780 Objekte). Karte, Filter, Profiler-Panel mit Quelle.
 
-```bash
-# Ingest gegen ein kleines lokales PBF, ohne DB (nur zählen + Sample-GeoJSON):
-cd pipeline && pip install -r requirements.txt
-python -m atmros.ingest --pbf /pfad/zu/klein.osm.pbf --dry-run
+**Schritt 2 – Gedächtnis & Automatik.** ✅
+- Diff-Logik (`change_event`: NEU/GEÄNDERT/GELÖSCHT/WIEDER) + `present`-Modell
+- Änderungsansicht (`/changes`, Liste + Pink-Highlight auf der Karte)
+- Last-Modified-gesteuerter Nightly-Ingest (systemd-Timer, holt nur bei neuem Stand)
+- „Daten werden aktualisiert"-Banner + „neuer Stand"-Toast (kein Reload nötig)
 
-# API:
-cd api && pip install -r requirements.txt
-DATABASE_URL=postgresql+psycopg://atmros:atmros@localhost/atmros uvicorn app.main:app --reload
+**Denkbar als Nächstes:** Archiv-/Zeitreise-Ansicht, Zweitquellen andocken
+(Bundesnetzagentur-EMF, OpenChargeMap-Anreicherung), Dichte-/Heatmap-Verdichtung.
 
-# Web:
-cd web && npm install && npm run dev
-```
+## Über
 
-## Status & nächster Schritt
+Eine Fähigkeit von **MultaEnhavo**. Design: Dark, technisch, ctOS-Anmutung —
+lesbar und ernst, kein Glitch-Cosplay. Die Akzentfarbe Pink markiert echte
+Auffälligkeiten (NEU/GEÄNDERT), nicht als Dauer-Deko.
 
-**Schritt 1:** Kette lauffähig, Karte + Panel mit Quelle. ✅ (real gegen das
-volle Bayern-PBF verifiziert: 94.780 Objekte)
-**Nachgezogen:** osmium-4.x-Fix, RAM-schonender Node-Index, Untertyp-Erfassung
-(Ehrlichkeit: Kirchturm ≠ Sendemast), Login-Gate (Coming-soon bis Launch),
-selbst gehostete Basemap. ✅
-**Schritt 2:** ✅ gebaut —
-- **Diff/Gedächtnis:** jeder Ingest leitet `change_event` ab
-  (NEU/GEÄNDERT/GELÖSCHT/WIEDER); `object.present` markiert Verschwundenes statt
-  zu löschen. Live-Ansichten (`/tiles`, `/stats`) filtern `present`.
-- **Nightly-Timer:** Last-Modified-gesteuert (`--if-modified` + systemd-Timer,
-  alle 2 h) — holt nur bei echtem neuen Stand. Siehe `docs/DEPLOY.md`.
-- **Änderungsansicht:** `/changes` + Header-Button „Änderungen" (Liste +
-  Pink-Highlight auf der Karte).
-- **Aktualisierungs-UX:** „Daten werden aktualisiert"-Banner während des
-  Ingests, „neuer Stand"-Toast danach (Tile-Version `?v=`, kein Reload nötig).
-
-Erster echter Diff-Lauf passiert beim nächsten Ingest auf dem Server
-(die reine Diff-Logik ist per Unit-Test abgedeckt).
+**Lizenz:** Geodaten © OpenStreetMap-Mitwirkende (ODbL). Der Projektcode steht
+unter der vom Betreiber gewählten Lizenz (siehe `LICENSE`, falls vorhanden).
