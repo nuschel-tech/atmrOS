@@ -1,10 +1,15 @@
 ---
-// Terminal-Prompt zum Entsperren. GET zeigt das Formular, POST prüft das
-// Passwort gegen den bcrypt-Hash und setzt bei Erfolg das signierte Cookie.
-// Voll selbst-enthalten (inline styles) — im gesperrten Zustand erreichbar.
+// Entsperren — Material 3 Expressive, aber SELBST-ENTHALTEN: im gesperrten
+// Zustand blockiert die Middleware /_astro-Bundles, daher keine @material/web-
+// Komponenten hier; die M3-Optik (Filled Text Field, Filled Button, Tonal-Card)
+// ist mit den Token-Werten aus der Dynamic-Color-Engine handgebaut. Fonts über
+// das freigegebene /fonts. GET zeigt das Formular, POST prüft das Passwort
+// gegen den bcrypt-Hash und setzt das signierte Cookie.
 import { verifyPassword } from "../lib/auth";
 import { signSession, verifySession } from "../lib/session";
 import { rateLimit, clientIp } from "../lib/ratelimit";
+import { M3_DARK as T } from "../lib/m3-color.generated";
+import { PETAL_PATH } from "../lib/m3e";
 
 const COOKIE = "atmros_session";
 const TTL_DAYS = 30;
@@ -44,6 +49,76 @@ if (Astro.request.method === "POST") {
     error = "Zugriff verweigert.";
   }
 }
+
+const css = `
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-500-normal.woff2") format("woff2");font-weight:500;font-display:swap}
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:swap}
+  :root{
+    --primary:${T.primary};--on-primary:${T.onPrimary};
+    --primary-container:${T.primaryContainer};--on-primary-container:${T.onPrimaryContainer};
+    --surface:${T.surface};--sc-low:${T.surfaceContainerLow};--sc:${T.surfaceContainer};
+    --sc-high:${T.surfaceContainerHigh};--sc-highest:${T.surfaceContainerHighest};
+    --on-surface:${T.onSurface};--on-surface-variant:${T.onSurfaceVariant};
+    --outline:${T.outline};--outline-variant:${T.outlineVariant};
+    --error-container:${T.errorContainer};--on-error-container:${T.onErrorContainer};
+    --spring:cubic-bezier(0.34,1.56,0.64,1);
+    --font:"Roboto","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:
+      radial-gradient(900px 600px at 85% -10%, color-mix(in srgb, var(--primary-container) 24%, transparent) 0%, transparent 62%),
+      var(--surface);
+    color:var(--on-surface);font-family:var(--font);
+    display:flex;align-items:center;justify-content:center;min-height:100vh;
+  }
+  .petal{position:fixed;width:min(38vmin,340px);height:min(38vmin,340px);
+    top:-8%;right:-6%;color:var(--primary-container);opacity:.4;
+    animation:spin 80s linear infinite;pointer-events:none}
+  .petal svg{width:100%;height:100%;display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .card{
+    position:relative;z-index:1;width:min(420px,92vw);
+    background:var(--sc-low);border-radius:28px;padding:30px 28px 26px;
+    animation:pop .7s var(--spring) both;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(26px) scale(.95)}to{opacity:1;transform:none}}
+  h1{margin:0 0 4px;font-size:30px;font-weight:800;letter-spacing:-.02em}
+  h1 .os{color:var(--primary)}
+  .sub{margin:0 0 24px;font-size:14px;color:var(--on-surface-variant)}
+  /* M3 Filled Text Field (handgebaut) */
+  .field{
+    background:var(--sc-highest);border-radius:8px 8px 0 0;
+    border-bottom:1px solid var(--on-surface-variant);
+    padding:9px 16px 8px;transition:border-color .15s;
+  }
+  .field:focus-within{border-bottom:2px solid var(--primary);padding-bottom:7px}
+  .field label{display:block;font-size:11.5px;font-weight:500;color:var(--on-surface-variant)}
+  .field:focus-within label{color:var(--primary)}
+  .field input{
+    width:100%;background:transparent;border:0;outline:none;
+    color:var(--on-surface);font-family:var(--font);font-size:16px;padding:3px 0 1px;
+  }
+  form{display:flex;flex-direction:column;gap:18px}
+  button{
+    align-self:flex-end;
+    background:var(--primary);color:var(--on-primary);border:0;
+    border-radius:999px;padding:11px 26px;cursor:pointer;
+    font-family:var(--font);font-size:14px;font-weight:600;
+    transition:box-shadow .15s, filter .15s;
+  }
+  button:hover{filter:brightness(1.06);box-shadow:0 2px 10px color-mix(in srgb, var(--primary) 35%, transparent)}
+  .err{
+    display:flex;align-items:center;gap:8px;margin:16px 0 0;
+    background:var(--error-container);color:var(--on-error-container);
+    border-radius:12px;padding:10px 14px;font-size:13.5px;
+    animation:pop .5s var(--spring) both;
+  }
+  .hint{margin:18px 0 0;font-size:12px;color:var(--outline)}
+  @media(prefers-reduced-motion:reduce){.petal,.card,.err{animation:none}}
+`;
 ---
 <!doctype html>
 <html lang="de">
@@ -52,45 +127,24 @@ if (Astro.request.method === "POST") {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <title>atmrOS · Zugang</title>
-<style is:inline>
-  :root{--pink:#e31c8d;--bg:#08090c;--bg2:#0e1116;--line:#20242d;--t0:#e8ecf2;--t1:#aab2bf;--t2:#5b6370;
-    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace}
-  *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:var(--bg);color:var(--t0);font-family:var(--mono);
-    display:flex;align-items:center;justify-content:center;min-height:100vh}
-  .term{width:min(440px,92vw);background:var(--bg2);border:1px solid var(--line);
-    border-radius:14px;overflow:hidden}
-  .bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);
-    font-size:11px;letter-spacing:.14em;color:var(--t2)}
-  .bar .d{width:9px;height:9px;border-radius:50%;background:#2a2f39}
-  .bar .d.pink{background:var(--pink)}
-  .body{padding:20px 18px 22px}
-  .prompt{font-size:12.5px;color:var(--t1);margin:0 0 14px;line-height:1.7}
-  .prompt .p{color:var(--pink)}
-  form{display:flex;gap:8px}
-  input[type=password]{flex:1;background:#05060a;border:1px solid var(--line);border-radius:10px;
-    color:var(--t0);font-family:var(--mono);font-size:14px;padding:11px 12px;outline:none}
-  input[type=password]:focus{border-color:var(--pink)}
-  button{background:var(--pink);border:0;border-radius:10px;color:#0a0a0a;font-family:var(--mono);
-    font-weight:700;font-size:14px;padding:0 16px;cursor:pointer}
-  .err{margin:14px 0 0;font-size:12px;color:#ff6b8a;letter-spacing:.02em}
-  .hint{margin:16px 0 0;font-size:11px;color:var(--t2)}
-</style>
+<style is:inline set:html={css}></style>
 </head>
 <body>
-  <div class="term">
-    <div class="bar"><span class="d pink"></span><span class="d"></span><span class="d"></span>
-      &nbsp;atmrOS · secure shell</div>
-    <div class="body">
-      <p class="prompt"><span class="p">auth@atmrOS</span>:~$ zugang anfordern<br />Passwort erforderlich.</p>
-      <form method="POST" autocomplete="off">
-        <input type="password" name="pw" placeholder="••••••••" autofocus aria-label="Passwort" />
-        <button type="submit">›</button>
-      </form>
-      {error && <p class="err">// {error}</p>}
-      <p class="hint">// Sitzung 30 Tage gültig.</p>
-    </div>
+  <div class="petal" aria-hidden="true">
+    <svg viewBox="0 0 200 200"><path fill="currentColor" d={PETAL_PATH} /></svg>
   </div>
+  <main class="card">
+    <h1>atmr<span class="os">OS</span></h1>
+    <p class="sub">Zugang anfordern — Passwort erforderlich.</p>
+    <form method="POST" autocomplete="off">
+      <div class="field">
+        <label for="pw">Passwort</label>
+        <input id="pw" type="password" name="pw" autofocus />
+      </div>
+      <button type="submit">Entsperren</button>
+    </form>
+    {error && <p class="err">{error}</p>}
+    <p class="hint">Sitzung 30 Tage gültig.</p>
+  </main>
 </body>
 </html>

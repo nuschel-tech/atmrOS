@@ -12,10 +12,33 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 ## [Unreleased]
 
 ### Geplant
-- M3-Umbau Phase 3: Kern-UI (App Bar, Filter-Chips, Side Sheets, Snackbar)
-- M3-Umbau Phase 4: /unlock-Seite
+- Tiefere BunnyCDN-Einbindung: Full-Site-Pull-Zone; Infra-Daten als
+  versionierte PMTiles auf dem CDN (Karten-Traffic am VPS vorbei)
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
+
+## [0.6.0] — 2026-07-30
+
+**Material 3 Expressive: das gesamte UI.** Der komplette Umbau ist damit
+abgeschlossen — App, Coming-soon und Unlock sprechen eine Designsprache.
+
+### Geändert
+- Kern-UI vollständig auf M3-Tokens umgestellt (keine rohen Hex-Werte mehr):
+  Top App Bar (Pill, Tonal-Surface), Legende als Tonal-Card mit Pill-Zeilen,
+  Chevron-Aufklapper mit Feder-Rotation und Shape-Morph-Punkten,
+  Profiler- und Änderungs-Panel als Side Sheets mit XL-Rundungen,
+  Quelle-Block als Filled Card in primary-container (Kern-Signatur betont),
+  „neuer Stand" als echte M3-Snackbar (inverse surface),
+  „Daten werden aktualisiert" als secondary-Tonal-Pill
+- Signal-Disziplin formalisiert: tertiary ist exklusiv für Änderungs-Ereignisse
+  (NEU/GEÄNDERT), RESTORED = secondary, DELETED = outline; Auswahl = primary —
+  alle Kartenfarben kommen jetzt aus der Dynamic-Color-Engine
+- Basemap-Style an die M3-Surface-Familie angeglichen (warme Plum-Töne statt
+  kühlem Blau — Karte und UI verschmelzen)
+- /unlock-Seite auf M3 Expressive (Tonal-Card, handgebautes Filled Text Field,
+  Filled Button, Petal-Deko, error-container-Meldung) — bewusst weiterhin
+  selbst-enthalten, da /_astro im gesperrten Zustand blockiert ist
+- Rohdaten (Attribute, IDs, Zeitstempel) behalten Mono als bewusstes Detail
 
 ## [0.5.0] — 2026-07-30
 
