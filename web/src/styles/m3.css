@@ -33,6 +33,15 @@
 }
 
 :root {
+  /* --- Marken-Signal (NICHT aus dem Seed generiert) ----------------------- */
+  /* Das MultaEnhavo-Pink ist EXKLUSIV für Änderungs-Ereignisse (NEU/GEÄNDERT)
+     reserviert — auf dem Orange-UI poppt es maximal. Werte = Pink-Tonpalette
+     (Seed #e31c8d): brand / P80 / P30 / P90. Nie als UI-Deko verwenden. */
+  --atmr-signal: #e31c8d;
+  --atmr-signal-bright: #ffb0ce;
+  --atmr-signal-container: #8c0054;
+  --atmr-on-signal-container: #ffd9e5;
+
   /* --- Typographie ------------------------------------------------------- */
   --md-ref-typeface: "Roboto", "Segoe UI", system-ui, -apple-system, sans-serif;
   --md-ref-typeface-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;

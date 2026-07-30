@@ -1,10 +1,14 @@
 // Kategorien = die eine verschmolzene Infrastruktur-Ebene. Label (DE) + Farbe.
 //
-// Farbregel (M3/CLAUDE.md): Kategoriefarben gedämpft; primary (Marken-Pink aus
-// der Dynamic-Color-Engine) markiert die Auswahl; tertiary ist EXKLUSIV für
-// Änderungs-Ereignisse (NEU/GEÄNDERT) reserviert.
+// Farbregel (M3/CLAUDE.md): UI-Seed ist Orange; primary markiert die Auswahl.
+// Das Marken-Pink #e31c8d ist EXKLUSIV für Änderungs-Ereignisse (NEU/GEÄNDERT)
+// reserviert — nie als Kategorie- oder Deko-Farbe.
 
 import { M3_DARK } from "./m3-color.generated";
+
+// Marken-Signal (fest, nicht aus dem Orange-Scheme generiert — s. m3.css).
+export const SIGNAL = "#e31c8d";
+export const SIGNAL_BRIGHT = "#ffb0ce";
 
 export interface Category {
   id: string;
@@ -16,7 +20,7 @@ export const CATEGORIES: Category[] = [
   { id: "mast",             label: "Sendemast",         color: "#4b9fd4" },
   { id: "tower",            label: "Turm",              color: "#5bc0be" },
   { id: "power_tower",      label: "Strommast",         color: "#8a8f98" },
-  { id: "substation",       label: "Umspannwerk",       color: "#c9a227" },
+  { id: "substation",       label: "Umspannwerk",       color: "#b3c94f" },
   { id: "charging_station", label: "Ladesäule",         color: "#3fb27f" },
   { id: "surveillance",     label: "Überwachungskamera", color: "#c56b7e" },
   { id: "fuel",             label: "Tankstelle",        color: "#9a7bd0" },
@@ -91,10 +95,10 @@ export function subtypeLabel(value: string): string {
 }
 
 // Änderungs-Ereignisse: Label (DE) + Kartenfarbe + CSS-Klasse für die
-// Tonal-Chips. tertiary = exklusive Auffälligkeits-Rolle (NEU/GEÄNDERT).
+// Tonal-Chips. Marken-Pink = exklusive Auffälligkeits-Rolle (NEU/GEÄNDERT).
 export const EVENT_META: Record<string, { label: string; color: string; cls: string }> = {
-  NEW: { label: "NEU", color: M3_DARK.tertiary, cls: "ev-new" },
-  CHANGED: { label: "GEÄNDERT", color: M3_DARK.tertiary, cls: "ev-changed" },
+  NEW: { label: "NEU", color: SIGNAL, cls: "ev-new" },
+  CHANGED: { label: "GEÄNDERT", color: SIGNAL, cls: "ev-changed" },
   RESTORED: { label: "WIEDER DA", color: M3_DARK.secondary, cls: "ev-restored" },
   DELETED: { label: "GELÖSCHT", color: M3_DARK.outline, cls: "ev-deleted" },
 };

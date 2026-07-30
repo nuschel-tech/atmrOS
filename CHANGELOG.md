@@ -17,6 +17,20 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.7.0] — 2026-07-30
+
+**Neues Farbschema: Orange-UI, Marken-Pink als exklusives Signal.**
+
+### Geändert
+- UI-Seed von Pink `#e31c8d` auf kräftiges Orange `#ff4d00` — die komplette
+  Palette (UI, Coming-soon, Unlock, Karte) wird daraus generiert
+- Das Marken-Pink ist jetzt EXKLUSIV das Änderungs-Signal: NEU/GEÄNDERT als
+  feste `--atmr-signal-*`-Konstanten (Chips, Zähler-Badge, Karten-Highlight) —
+  auf dem Orange-UI maximal auffällig; RESTORED/DELETED unverändert
+  secondary/outline, Auswahl = primary (Orange)
+- Basemap auf die Orange-Surface-Familie harmonisiert (warme Ember-Töne)
+- Kategoriefarbe Umspannwerke von Gold auf Lime (Kollision mit Orange-Primary)
+
 ## [0.6.0] — 2026-07-30
 
 **Material 3 Expressive: das gesamte UI.** Der komplette Umbau ist damit

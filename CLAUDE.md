@@ -168,12 +168,15 @@ Open Source (Apache-2.0), keine Lizenzrisiken. Die frühere Watch-Dogs/ctOS-
 Ästhetik ist **verworfen** (Trade-Dress-/Lizenzbedenken, nicht integrierbar).
 Frühere Sessions-Notizen zu Terminal-Optik/Switzer/Squircle gelten NICHT mehr.
 
-- **Farben: Dynamic Color.** Schemes werden aus dem Marken-Seed Pink `#e31c8d`
-  **generiert** (`@material/material-color-utilities`, HCT), nicht handgepickt.
-  Es gelten die M3-Farbrollen (primary/secondary/tertiary/surface-Stufen …).
-  Dark ist Default; Light-Scheme wird miterzeugt.
-- **Signal-Disziplin bleibt:** Änderungs-Ereignisse (NEU/GEÄNDERT) bekommen eine
-  exklusive Rolle (tertiary), damit Auffälligkeit Auffälligkeit bleibt.
+- **Farben: Dynamic Color.** Schemes werden aus dem UI-Seed **Orange `#ff4d00`**
+  **generiert** (`@material/material-color-utilities`, HCT, Scheme vibrant),
+  nicht handgepickt. Es gelten die M3-Farbrollen (primary/secondary/tertiary/
+  surface-Stufen …). Dark ist Default; Light-Scheme wird miterzeugt.
+- **Signal-Disziplin: das Marken-Pink `#e31c8d` ist EXKLUSIV das
+  Änderungs-Signal** (NEU/GEÄNDERT) — als feste Konstante (`--atmr-signal-*`
+  in m3.css, `SIGNAL` in categories.ts), NICHT aus dem Orange-Scheme abgeleitet
+  und nie als UI-/Deko-Farbe. Auf dem Orange-UI poppt es maximal. RESTORED =
+  secondary, DELETED = outline, Auswahl = primary.
 - **Font: Roboto** (nicht Roboto Flex), **self-hosted** (woff2 im Repo/Bundle —
   kein Google-Fonts-CDN, DSGVO). Monospace nur noch als Detail für Rohdaten
   (Attribute, Hashes, IDs), falls überhaupt.

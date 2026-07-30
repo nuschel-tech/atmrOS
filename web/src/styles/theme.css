@@ -44,7 +44,7 @@ html, body {
   color: var(--md-sys-color-on-secondary-container);
 }
 .hud-badge {
-  background: var(--md-sys-color-tertiary); color: var(--md-sys-color-on-tertiary);
+  background: var(--atmr-signal); color: #fff;
   border-radius: var(--md-shape-full);
   font: var(--md-type-label-small); font-weight: 700; padding: 1px 7px; line-height: 1.5;
 }
@@ -122,10 +122,10 @@ html, body {
   letter-spacing: 0.04em;
   border-radius: var(--md-shape-full); padding: 3px 9px; margin-top: 1px;
 }
-/* Tonal-Chips je Ereignis: tertiary = Auffälligkeit (NEU/GEÄNDERT) */
+/* Tonal-Chips je Ereignis: Marken-Pink = exklusive Auffälligkeit (NEU/GEÄNDERT) */
 .chg-badge.ev-new, .chg-badge.ev-changed {
-  background: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
+  background: var(--atmr-signal-container);
+  color: var(--atmr-on-signal-container);
 }
 .chg-badge.ev-restored {
   background: var(--md-sys-color-secondary-container);

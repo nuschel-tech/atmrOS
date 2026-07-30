@@ -29,7 +29,10 @@ import {
   SchemeVibrant,
 } from "@material/material-color-utilities";
 
-const SEED = process.env.M3_SEED ?? "#e31c8d";
+// UI-Seed: kräftiges Orange (Infrastruktur/Energie). Das Marken-Pink #e31c8d
+// ist bewusst NICHT mehr der UI-Seed — es lebt als exklusive Signalfarbe für
+// Änderungs-Ereignisse weiter (siehe m3.css --atmr-signal-*).
+const SEED = process.env.M3_SEED ?? "#ff4d00";
 const SCHEME = (process.env.M3_SCHEME ?? "vibrant").toLowerCase();
 const CONTRAST = Number(process.env.M3_CONTRAST ?? 0);
 
