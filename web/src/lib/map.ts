@@ -25,6 +25,7 @@ import {
   eventColorExpression,
   subtypeLabel,
 } from "./categories";
+import { M3_DARK } from "./m3-color.generated";
 
 const SRC = "atmros-infra";
 const LAYER = "infra-points";
@@ -97,7 +98,7 @@ function fallbackStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
     sources: {},
-    layers: [{ id: "background", type: "background", paint: { "background-color": "#0a0c10" } }],
+    layers: [{ id: "background", type: "background", paint: { "background-color": M3_DARK.surface } }],
   };
 }
 
@@ -293,12 +294,12 @@ function renderChangesList(changes: ChangeItem[]): void {
   }
   list.innerHTML = changes
     .map((c, idx) => {
-      const ev = EVENT_META[c.event_type] ?? { label: c.event_type, color: ACCENT };
+      const ev = EVENT_META[c.event_type] ?? { label: c.event_type, color: ACCENT, cls: "ev-changed" };
       const cat = CATEGORY_BY_ID[c.category];
       const catLabel = cat?.label ?? c.category;
       const sub = c.subtype ? ` · ${escapeHtml(subtypeLabel(c.subtype))}` : "";
       return `<button class="chg-row" data-i="${idx}">
-          <span class="chg-badge" style="color:${ev.color};border-color:${ev.color}">${escapeHtml(ev.label)}</span>
+          <span class="chg-badge ${ev.cls}">${escapeHtml(ev.label)}</span>
           <span class="chg-body">
             <span class="chg-cat">${escapeHtml(catLabel)}${sub}</span>
             <span class="chg-when">${formatDate(c.observed_at)} · ${c.osm_type}/${c.osm_id}</span>
@@ -453,11 +454,14 @@ function buildLegend(stats: StatsResponse): void {
     }
 
     const arrow = hasSubs
-      ? `<span class="lg-arrow" role="button" tabindex="0" aria-label="Untertypen ein-/ausklappen" aria-expanded="false">▸</span>`
+      ? `<span class="lg-arrow" role="button" tabindex="0" aria-label="Untertypen ein-/ausklappen" aria-expanded="false">` +
+        `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">` +
+        `<path d="M9.3 6.7a1 1 0 0 1 1.4-1.4l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4-1.4L14.6 12z"/></svg></span>`
       : "";
 
+    const delay = CATEGORIES.indexOf(c) * 45;
     groups.push(
-      `<div class="lg-group" data-cat="${c.id}">
+      `<div class="lg-group m3e-pop" style="--m3e-delay:${delay}ms" data-cat="${c.id}">
          <div class="lg-cat" data-cat="${c.id}" role="button" tabindex="0" aria-pressed="true">
            <span class="dot" style="background:${c.color}"></span>
            <span class="lbl">${c.label}</span>
@@ -531,7 +535,7 @@ function toggleExpand(arrow: HTMLElement): void {
   if (!subs) return;
   const collapsed = subs.hasAttribute("hidden");
   subs.toggleAttribute("hidden", !collapsed);
-  arrow.textContent = collapsed ? "▾" : "▸";
+  // Chevron-Rotation macht das CSS über [aria-expanded] (Spring-Easing).
   arrow.setAttribute("aria-expanded", String(collapsed));
 }
 

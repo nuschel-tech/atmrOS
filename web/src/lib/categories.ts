@@ -1,8 +1,10 @@
 // Kategorien = die eine verschmolzene Infrastruktur-Ebene. Label (DE) + Farbe.
 //
-// Farbregel (Design-System): gedämpfte, entsättigte Kategoriefarben. Das Pink
-// #e31c8d ist RESERVIERT für echte Auffälligkeiten (Auswahl, später NEU/
-// GEÄNDERT) — nie als Kategorie-Dauerfarbe.
+// Farbregel (M3/CLAUDE.md): Kategoriefarben gedämpft; primary (Marken-Pink aus
+// der Dynamic-Color-Engine) markiert die Auswahl; tertiary ist EXKLUSIV für
+// Änderungs-Ereignisse (NEU/GEÄNDERT) reserviert.
+
+import { M3_DARK } from "./m3-color.generated";
 
 export interface Category {
   id: string;
@@ -20,7 +22,8 @@ export const CATEGORIES: Category[] = [
   { id: "fuel",             label: "Tankstelle",        color: "#9a7bd0" },
 ];
 
-export const ACCENT = "#e31c8d";
+// Auswahl-/Signalfarbe aus der Dynamic-Color-Engine (primary, dark).
+export const ACCENT = M3_DARK.primary;
 
 export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
   CATEGORIES.map((c) => [c.id, c]),
@@ -87,13 +90,13 @@ export function subtypeLabel(value: string): string {
   return SUBTYPE_LABELS[value] ?? value;
 }
 
-// Änderungs-Ereignisse: Label (DE) + Farbe. Pink = echte Auffälligkeit
-// (NEU/GEÄNDERT/WIEDER); Gelöschtes gedämpft grau.
-export const EVENT_META: Record<string, { label: string; color: string }> = {
-  NEW: { label: "NEU", color: "#e31c8d" },
-  CHANGED: { label: "GEÄNDERT", color: "#e31c8d" },
-  RESTORED: { label: "WIEDER DA", color: "#5bc0be" },
-  DELETED: { label: "GELÖSCHT", color: "#8a8f98" },
+// Änderungs-Ereignisse: Label (DE) + Kartenfarbe + CSS-Klasse für die
+// Tonal-Chips. tertiary = exklusive Auffälligkeits-Rolle (NEU/GEÄNDERT).
+export const EVENT_META: Record<string, { label: string; color: string; cls: string }> = {
+  NEW: { label: "NEU", color: M3_DARK.tertiary, cls: "ev-new" },
+  CHANGED: { label: "GEÄNDERT", color: M3_DARK.tertiary, cls: "ev-changed" },
+  RESTORED: { label: "WIEDER DA", color: M3_DARK.secondary, cls: "ev-restored" },
+  DELETED: { label: "GELÖSCHT", color: M3_DARK.outline, cls: "ev-deleted" },
 };
 
 export function eventColorExpression(): unknown[] {
