@@ -11,7 +11,9 @@ import { defineMiddleware } from "astro:middleware";
 import { comingSoonHtml } from "./lib/comingsoon";
 import { verifySession } from "./lib/session";
 
-const ALLOW = ["/unlock", "/lock"];
+// /fonts: self-gehostete Roboto-woff2 — auch im gesperrten Zustand nötig
+// (Coming-soon- und /unlock-Seite laden sie per @font-face).
+const ALLOW = ["/unlock", "/lock", "/fonts"];
 
 export const onRequest = defineMiddleware((context, next) => {
   if (process.env.ATMROS_LAUNCHED === "true") return next();

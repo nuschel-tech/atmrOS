@@ -1,12 +1,12 @@
 // Öffentliches Gesicht bis zum Launch — Material 3 Expressive.
 //
-// Bewusster Stilbruch zum ctOS-Kern-UI: die Coming-soon-Seite ist Marketing
-// (CLAUDE.md: "Effekte gehören in Marketing/Video, nicht ins Bedien-Interface").
-// M3-Dark-Tonal-Palette aus dem Marken-Seed #e31c8d, Expressive-Merkmale:
-// Cookie-/Petal-Shapes, federnde Overshoot-Motion, wavy progress, Tonal-Cards,
-// Chips. Voll selbst-enthalten (inline CSS/SVG, KEINE externen Fonts — DSGVO:
-// kein Google-Fonts-Request; Roboto-Flex-Stack fällt auf Systemfonts zurück).
-// KEIN Hinweis auf /unlock.
+// Farbrollen kommen aus der Dynamic-Color-Engine (m3-color.generated.ts,
+// erzeugt aus dem Marken-Seed via `npm run tokens`) — hier zur Build-Zeit in
+// das selbst-enthaltene HTML interpoliert. Roboto self-hosted über /fonts
+// (Middleware gibt /fonts auch im gesperrten Zustand frei; DSGVO: kein
+// Google-Fonts-Request). KEIN Hinweis auf /unlock.
+
+import { M3_DARK as T } from "./m3-color.generated";
 
 export function comingSoonHtml(): string {
   return `<!doctype html>
@@ -17,29 +17,33 @@ export function comingSoonHtml(): string {
 <meta name="robots" content="noindex" />
 <title>atmrOS — System wird hochgefahren</title>
 <style>
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-400-normal.woff2") format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-500-normal.woff2") format("woff2");font-weight:500;font-display:swap}
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:swap}
+  @font-face{font-family:"Roboto";src:url("/fonts/roboto-latin-900-normal.woff2") format("woff2");font-weight:900;font-display:swap}
   :root{
-    /* M3-Dark-Farbrollen, tonal aus Seed #e31c8d abgeleitet */
-    --primary:#ffafd2;
-    --on-primary:#5e1133;
-    --primary-container:#8b0d5e;
-    --on-primary-container:#ffd8e8;
-    --secondary:#e0bdd0;
-    --secondary-container:#573e4b;
-    --on-secondary-container:#fdd9e9;
-    --tertiary:#ffb59c;
-    --tertiary-container:#6d3b26;
-    --surface:#171216;
-    --surface-container-low:#1f191d;
-    --surface-container:#241d22;
-    --surface-container-high:#2f272c;
-    --on-surface:#ece0e6;
-    --on-surface-variant:#cfc2c9;
-    --outline:#9b8d94;
-    --outline-variant:#4f4449;
+    /* M3-Farbrollen — generiert aus dem Marken-Seed (Dynamic Color, dark) */
+    --primary:${T.primary};
+    --on-primary:${T.onPrimary};
+    --primary-container:${T.primaryContainer};
+    --on-primary-container:${T.onPrimaryContainer};
+    --secondary:${T.secondary};
+    --secondary-container:${T.secondaryContainer};
+    --on-secondary-container:${T.onSecondaryContainer};
+    --tertiary:${T.tertiary};
+    --tertiary-container:${T.tertiaryContainer};
+    --surface:${T.surface};
+    --surface-container-low:${T.surfaceContainerLow};
+    --surface-container:${T.surfaceContainer};
+    --surface-container-high:${T.surfaceContainerHigh};
+    --on-surface:${T.onSurface};
+    --on-surface-variant:${T.onSurfaceVariant};
+    --outline:${T.outline};
+    --outline-variant:${T.outlineVariant};
     /* M3-Expressive-Motion: federnd mit Überschwung */
     --spring:cubic-bezier(0.34,1.56,0.64,1);
     --emphasized:cubic-bezier(0.2,0,0,1);
-    --font:"Roboto Flex","Roboto","Segoe UI",system-ui,-apple-system,sans-serif;
+    --font:"Roboto","Segoe UI",system-ui,-apple-system,sans-serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}
