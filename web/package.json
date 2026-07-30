@@ -7,7 +7,8 @@
     "dev": "astro dev --host",
     "build": "astro build",
     "preview": "astro preview --host",
-    "tokens": "node scripts/generate-m3-tokens.mjs"
+    "tokens": "node scripts/generate-m3-tokens.mjs",
+    "check": "NODE_OPTIONS=--max-old-space-size=8192 astro check"
   },
   "dependencies": {
     "@astrojs/node": "^8.3.4",

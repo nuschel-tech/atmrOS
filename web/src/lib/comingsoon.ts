@@ -8,6 +8,7 @@
 
 import { M3_DARK as T } from "./m3-color.generated";
 import { PETAL_PATH } from "./m3e";
+import pkg from "../../package.json";
 
 export function comingSoonHtml(): string {
   return `<!doctype html>
@@ -149,6 +150,8 @@ export function comingSoonHtml(): string {
   .foot{font-size:13.5px;color:var(--on-surface-variant);
     animation:pop .7s .64s var(--spring) both}
   .foot .src{color:var(--primary);font-weight:600}
+  .ver{margin:10px 0 0;font-size:11.5px;color:var(--outline);
+    animation:pop .7s .7s var(--spring) both}
 
   @keyframes pop{from{opacity:0;transform:translateY(26px) scale(.94)}
     to{opacity:1;transform:none}}
@@ -208,6 +211,7 @@ export function comingSoonHtml(): string {
     </div>
 
     <p class="foot">Das ehrliche ctOS — <span class="src">jede Anzeige trägt ihre Quelle.</span></p>
+    <p class="ver">atmrOS v${pkg.version}</p>
   </main>
 </body>
 </html>`;

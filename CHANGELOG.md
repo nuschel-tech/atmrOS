@@ -4,9 +4,10 @@ Alle nennenswerten Änderungen an atmrOS. Format angelehnt an
 [Keep a Changelog](https://keepachangelog.com/de/), Versionierung nach
 [SemVer](https://semver.org/lang/de/) (`0.x` = Pre-Launch; Launch wird `1.0.0`).
 
-Versions-Quelle ist die Datei [`VERSION`](./VERSION); Releases werden als
-`vX.Y.Z` getaggt. Bumpen mit `node scripts/bump-version.mjs <version>`
-(hält `VERSION`, `web/package.json` und `api/app/version.py` synchron).
+Versions-Quelle ist die Datei [`VERSION`](./VERSION); die laufende Version ist
+in der Software selbst sichtbar (Web-HUD, Coming-soon, `GET /health`). Bumpen
+mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
+`web/package.json` und `api/app/version.py` synchron).
 
 ## [Unreleased]
 

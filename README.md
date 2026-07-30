@@ -132,13 +132,14 @@ markiert (`present=false`) — kommt ein Objekt zurück, ist das ein *WIEDER*-Er
 
 [SemVer](https://semver.org/lang/de/); `0.x` = Pre-Launch, der öffentliche
 Launch wird `1.0.0`. Quelle der Wahrheit ist [`VERSION`](./VERSION), Historie
-in [`CHANGELOG.md`](./CHANGELOG.md), Releases als `vX.Y.Z`-Tags. Bump:
+in [`CHANGELOG.md`](./CHANGELOG.md). Bump:
 
 ```bash
 node scripts/bump-version.mjs 0.6.0   # hält VERSION, web & api synchron
 ```
 
-Die laufende Version ist im Web-HUD und unter `GET /health` sichtbar.
+Die laufende Version ist in der Software selbst sichtbar: im Web-HUD, auf der
+Coming-soon-Seite und unter `GET /health`.
 
 ## Status
 

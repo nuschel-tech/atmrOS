@@ -3,8 +3,8 @@
 //   node scripts/bump-version.mjs 0.6.0
 //
 // Schreibt: VERSION, web/package.json (version), api/app/version.py.
-// Danach: CHANGELOG.md-Abschnitt anlegen, committen, Tag setzen:
-//   git tag -a v0.6.0 -m "..." && git push --follow-tags
+// Danach: CHANGELOG.md-Abschnitt anlegen und committen. Keine git-Tags —
+// die Version ist in der Software sichtbar (Web-HUD, Coming-soon, /health).
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -35,4 +35,4 @@ writeFileSync(
 );
 
 console.log(`atmrOS -> ${version}  (VERSION, web/package.json, api/app/version.py)`);
-console.log(`Nächste Schritte: CHANGELOG.md ergänzen, committen, git tag -a v${version}`);
+console.log("Nächster Schritt: CHANGELOG.md ergänzen und committen.");

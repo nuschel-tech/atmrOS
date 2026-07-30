@@ -209,9 +209,9 @@ SemVer, `0.x` bis zum Launch (Launch = `1.0.0`). Quelle der Wahrheit: `VERSION`
 im Repo-Root; `node scripts/bump-version.mjs <ver>` synchronisiert
 `web/package.json` und `api/app/version.py` (api-Build-Context ist nur `./api`,
 deshalb die generierte Datei). **Jedes Release:** CHANGELOG.md-Abschnitt
-(deutsch, Keep-a-Changelog-Stil) + annotierter Tag `vX.Y.Z`. Version ist im
-Web-HUD und in `GET /health` sichtbar — die drei Stellen nie von Hand
-auseinanderlaufen lassen.
+(deutsch, Keep-a-Changelog-Stil). KEINE git-Tags — die Version lebt in der
+Software selbst (Web-HUD, Coming-soon, `GET /health`); die drei Stellen nie
+von Hand auseinanderlaufen lassen.
 
 ---
 
