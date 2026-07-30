@@ -160,18 +160,32 @@ diesem Umfeld erprobt und stabil sind.
 
 ---
 
-## Design-System (bestehend, MUSS eingehalten werden)
+## Design-System (MUSS eingehalten werden) — Material 3 Expressive
 
-Der Betreiber hat ein einheitliches CI über alle MultaEnhavo-Projekte:
-- **Akzentfarbe:** Pink `#e31c8d` (aus der Business-Card-CMYK abgeleitet)
-- **Font:** Switzer
-- **Icons:** Phosphor
-- **Formsprache:** Squircle (weiche, aber definierte Ecken), Dark Theme durchgängig
-- **atmrOS-spezifisch:** ctOS/Watch-Dogs-Ästhetik ist explizit erwünscht — dunkel,
-  technisch, Terminal-Anmutung, Profiler-Panels. ABER: **lesbar und ernst, kein
-  Glitch-Cosplay im Kern-UI.** Effekte (Scanlines, Glitch) gehören in Marketing/Video,
-  nicht ins Bedien-Interface. Farbsignal sparsam: Akzentfarbe markiert echte Auffälligkeiten
-  (z.B. NEU/GEÄNDERT), nicht als Dauer-Deko.
+**Entscheidung (Juli 2026, ersetzt die frühere ctOS-Richtung):** atmrOS nutzt
+**Material 3 Expressive** — das Signature-Design der MultaEnhavo-Entwicklung,
+Open Source (Apache-2.0), keine Lizenzrisiken. Die frühere Watch-Dogs/ctOS-
+Ästhetik ist **verworfen** (Trade-Dress-/Lizenzbedenken, nicht integrierbar).
+Frühere Sessions-Notizen zu Terminal-Optik/Switzer/Squircle gelten NICHT mehr.
+
+- **Farben: Dynamic Color.** Schemes werden aus dem Marken-Seed Pink `#e31c8d`
+  **generiert** (`@material/material-color-utilities`, HCT), nicht handgepickt.
+  Es gelten die M3-Farbrollen (primary/secondary/tertiary/surface-Stufen …).
+  Dark ist Default; Light-Scheme wird miterzeugt.
+- **Signal-Disziplin bleibt:** Änderungs-Ereignisse (NEU/GEÄNDERT) bekommen eine
+  exklusive Rolle (tertiary), damit Auffälligkeit Auffälligkeit bleibt.
+- **Font: Roboto** (nicht Roboto Flex), **self-hosted** (woff2 im Repo/Bundle —
+  kein Google-Fonts-CDN, DSGVO). Monospace nur noch als Detail für Rohdaten
+  (Attribute, Hashes, IDs), falls überhaupt.
+- **Expressive-Merkmale erwünscht:** Tonal Surfaces, große Display-Typo,
+  Shape-Scale bis Pill, Cookie-/Petal-Shapes, federnde Overshoot-Motion,
+  wavy progress, State-Layers. `prefers-reduced-motion` respektieren.
+- **Komponenten:** `@material/web` selektiv für Primitives (Buttons, Chips,
+  Text Fields …; Achtung: M3 classic + Maintenance-Mode — Expressive-Schicht
+  und fehlende Teile wie Side Sheets/Snackbar selbst bauen). Kein Framework-
+  Zwang, kein Dynamic-Color-Verzicht.
+- **Dichte:** etwas kompakter als Stock-M3 fahren — atmrOS ist ein Karten-/
+  Daten-Tool, kein Consumer-Feed.
 
 > Hinweis: atomar.org hat bereits eine Live-Coming-Soon-Seite. atmrOS ist eine
 > **Fähigkeit von MultaEnhavo** (dem angemeldeten Betrieb, der auch die Brands

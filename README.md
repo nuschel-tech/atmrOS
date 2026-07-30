@@ -144,9 +144,10 @@ markiert (`present=false`) — kommt ein Objekt zurück, ist das ein *WIEDER*-Er
 
 ## Über
 
-Eine Fähigkeit von **MultaEnhavo**. Design: Dark, technisch, ctOS-Anmutung —
-lesbar und ernst, kein Glitch-Cosplay. Die Akzentfarbe Pink markiert echte
-Auffälligkeiten (NEU/GEÄNDERT), nicht als Dauer-Deko.
+Eine Fähigkeit von **MultaEnhavo**. Design: **Material 3 Expressive** — das
+Signature-Design der MultaEnhavo-Entwicklung. Dynamic Color aus dem Marken-Seed
+Pink `#e31c8d`, Roboto (self-hosted), Dark-First. Änderungs-Ereignisse
+(NEU/GEÄNDERT) behalten eine exklusive Signalrolle.
 
 **Lizenz:** Geodaten © OpenStreetMap-Mitwirkende (ODbL). Der Projektcode steht
 unter der vom Betreiber gewählten Lizenz (siehe `LICENSE`, falls vorhanden).
