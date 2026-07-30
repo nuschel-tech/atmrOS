@@ -203,6 +203,16 @@ Frühere Sessions-Notizen zu Terminal-Optik/Switzer/Squircle gelten NICHT mehr.
 4. **Lückenlosigkeit vor Features.** Der Wert des Archivs ist, dass es keine Lücken hat.
    Nightly-Job muss robust sein (Retry, Fehler loggen, aber Kette nie stillschweigend brechen).
 
+## Versionierung & Releases
+
+SemVer, `0.x` bis zum Launch (Launch = `1.0.0`). Quelle der Wahrheit: `VERSION`
+im Repo-Root; `node scripts/bump-version.mjs <ver>` synchronisiert
+`web/package.json` und `api/app/version.py` (api-Build-Context ist nur `./api`,
+deshalb die generierte Datei). **Jedes Release:** CHANGELOG.md-Abschnitt
+(deutsch, Keep-a-Changelog-Stil) + annotierter Tag `vX.Y.Z`. Version ist im
+Web-HUD und in `GET /health` sichtbar — die drei Stellen nie von Hand
+auseinanderlaufen lassen.
+
 ---
 
 ## ERSTER BAUSCHRITT (klein, sichtbar, ein Durchlauf)

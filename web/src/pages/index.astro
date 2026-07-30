@@ -1,6 +1,9 @@
 ---
 import "../styles/m3.css";
 import "../styles/theme.css";
+import pkg from "../../package.json";
+
+const VERSION = pkg.version;
 ---
 
 <!doctype html>
@@ -18,7 +21,7 @@ import "../styles/theme.css";
 
     <header class="hud-top">
       <div class="brand">atmr<span class="os">OS</span></div>
-      <div class="sub">// Infrastruktur Bayern · eine Ebene · mit Quelle</div>
+      <div class="sub">// Infrastruktur Bayern · eine Ebene · mit Quelle · v{VERSION}</div>
       <button id="changes-toggle" class="hud-btn" aria-pressed="false">
         Änderungen<span id="changes-count" class="hud-badge" hidden></span>
       </button>

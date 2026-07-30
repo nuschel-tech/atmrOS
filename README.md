@@ -128,6 +128,18 @@ markiert (`present=false`) — kommt ein Objekt zurück, ist das ein *WIEDER*-Er
 3. **Das Rohlager ist unantastbar.** Einmal geschrieben, nie verändert — SHA-256-Kette als Beweis.
 4. **Lückenlosigkeit vor Features.** Der Ingest schreibt in *einer* Transaktion; bei Fehler bricht die Kette sauber ab, statt halb zu committen.
 
+## Versionierung
+
+[SemVer](https://semver.org/lang/de/); `0.x` = Pre-Launch, der öffentliche
+Launch wird `1.0.0`. Quelle der Wahrheit ist [`VERSION`](./VERSION), Historie
+in [`CHANGELOG.md`](./CHANGELOG.md), Releases als `vX.Y.Z`-Tags. Bump:
+
+```bash
+node scripts/bump-version.mjs 0.6.0   # hält VERSION, web & api synchron
+```
+
+Die laufende Version ist im Web-HUD und unter `GET /health` sichtbar.
+
 ## Status
 
 **Schritt 1 – die Kette läuft.** ✅ Real gegen das volle Bayern-PBF verifiziert

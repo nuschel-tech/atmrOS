@@ -21,8 +21,9 @@ from sqlalchemy import text
 
 from .db import get_engine
 from .session import verify_session
+from .version import __version__
 
-app = FastAPI(title="atmrOS API", version="0.1.0")
+app = FastAPI(title="atmrOS API", version=__version__)
 
 # Alle Endpunkte laufen unter diesem Pfad-Präfix. Für Single-Origin-Deployment
 # (alles unter atomar.org) auf "/api" setzen; der Reverse-Proxy leitet
@@ -82,7 +83,7 @@ _MVT_SQL = text(
 def health() -> dict:
     with get_engine().connect() as conn:
         conn.execute(text("SELECT 1"))
-    return {"status": "ok"}
+    return {"status": "ok", "version": __version__}
 
 
 @router.get("/status")
