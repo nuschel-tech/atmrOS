@@ -7,6 +7,7 @@
 // Google-Fonts-Request). KEIN Hinweis auf /unlock.
 
 import { M3_DARK as T } from "./m3-color.generated";
+import { PETAL_PATH } from "./m3e";
 
 export function comingSoonHtml(): string {
   return `<!doctype html>
@@ -167,10 +168,10 @@ export function comingSoonHtml(): string {
 <body>
   <!-- 8-Petal-Cookie-Shapes (M3 Expressive), langsam rotierend -->
   <div class="shape shape-a" aria-hidden="true"><svg viewBox="0 0 200 200">
-    <path fill="currentColor" d="M160,100 Q190.5,137.5 142.4,142.4 Q137.5,190.5 100,160 Q62.5,190.5 57.6,142.4 Q9.5,137.5 40,100 Q9.5,62.5 57.6,57.6 Q62.5,9.5 100,40 Q137.5,9.5 142.4,57.6 Q190.5,62.5 160,100 Z"/>
+    <path fill="currentColor" d="${PETAL_PATH}"/>
   </svg></div>
   <div class="shape shape-b" aria-hidden="true"><svg viewBox="0 0 200 200">
-    <path fill="currentColor" d="M160,100 Q190.5,137.5 142.4,142.4 Q137.5,190.5 100,160 Q62.5,190.5 57.6,142.4 Q9.5,137.5 40,100 Q9.5,62.5 57.6,57.6 Q62.5,9.5 100,40 Q137.5,9.5 142.4,57.6 Q190.5,62.5 160,100 Z"/>
+    <path fill="currentColor" d="${PETAL_PATH}"/>
   </svg></div>
 
   <main class="wrap">

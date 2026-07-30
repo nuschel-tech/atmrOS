@@ -1,5 +1,6 @@
 ---
 import "../styles/m3.css";
+import "../styles/expressive.css";
 import "../styles/theme.css";
 import pkg from "../../package.json";
 
@@ -30,7 +31,9 @@ const VERSION = pkg.version;
     <section id="changes" class="changes-drawer" hidden aria-label="Änderungen">
       <div class="changes-head">
         <span>Änderungen <span class="changes-since">· letzte 7 Tage</span></span>
-        <button id="changes-close" class="close" aria-label="Schließen">×</button>
+        <md-icon-button id="changes-close" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+        </md-icon-button>
       </div>
       <div id="changes-list" class="changes-list"></div>
     </section>
@@ -43,7 +46,9 @@ const VERSION = pkg.version;
     <section id="panel" class="panel" aria-live="polite">
       <div class="panel-head">
         <div id="panel-head-content" class="title"></div>
-        <button id="panel-close" class="close" aria-label="Schließen">×</button>
+        <md-icon-button id="panel-close" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+        </md-icon-button>
       </div>
       <div id="panel-body" class="panel-body"></div>
     </section>
@@ -55,10 +60,11 @@ const VERSION = pkg.version;
 
     <div id="toast" class="toast" role="status" hidden>
       <span class="toast-msg">// neuer Stand verfügbar</span>
-      <button id="toast-apply" class="toast-btn">aktualisieren</button>
+      <md-filled-button id="toast-apply">aktualisieren</md-filled-button>
     </div>
 
     <script>
+      import "../lib/md";
       import { initMap } from "../lib/map";
       initMap().catch((e) => console.error("atmrOS map init failed", e));
     </script>
