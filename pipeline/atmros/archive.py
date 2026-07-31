@@ -45,17 +45,18 @@ def _sha256_file(path: str) -> str:
 
 
 def write_archive(records: list[dict], observed_at: datetime,
-                  source: str, source_url: str, archive_dir: str) -> dict:
+                  source: str, source_url: str, archive_dir: str,
+                  prefix: str = "osm-geofabrik-bayern") -> dict:
     """Schreibt Parquet + Manifest-Zeile. Gibt die Manifest-Zeile zurück.
 
-    Dateiname trägt das Stand-Datum. Existiert die Datei schon (erneuter Lauf
-    desselben Extrakts), wird sie NICHT überschrieben — das Rohlager ist
-    unantastbar. Geschrieben wird erst nach *.part, dann os.replace() — ein
-    abgebrochener Lauf hinterlässt nie eine halbe Datei im Rohlager.
+    Dateiname trägt Quelle (prefix) + Stand-Datum. Existiert die Datei schon
+    (erneuter Lauf desselben Extrakts), wird sie NICHT überschrieben — das
+    Rohlager ist unantastbar. Geschrieben wird erst nach *.part, dann
+    os.replace() — ein abgebrochener Lauf hinterlässt nie eine halbe Datei.
     """
     os.makedirs(archive_dir, exist_ok=True)
     stamp = observed_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    path = os.path.join(archive_dir, f"osm-geofabrik-bayern-{stamp}.parquet")
+    path = os.path.join(archive_dir, f"{prefix}-{stamp}.parquet")
 
     if os.path.exists(path):
         sha = _sha256_file(path)

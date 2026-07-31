@@ -94,16 +94,21 @@ def _chunks(seq: list, size: int):
         yield seq[i:i + size]
 
 
-def _latest_state(conn) -> dict[tuple[str, int], dict]:
-    """Letzter bekannter Zustand pro Objekt: hash + attrs (aus der neuesten
-    Beobachtung) + present (aus object). Basis für den Diff."""
+def _latest_state(conn, source: str) -> dict[tuple[str, int], dict]:
+    """Letzter bekannter Zustand pro Objekt DIESER QUELLE: hash + attrs (aus
+    der neuesten Beobachtung) + present (aus object). Basis für den Diff.
+
+    Das Source-Scoping ist die Grundlage für Mehr-Quellen-Betrieb (Stufe B):
+    ein PEGELONLINE-Lauf sieht nur Pegel-Objekte — sonst würde er alle
+    OSM-Objekte als DELETED werten, weil sie in seinem `seen` fehlen."""
     obs = conn.execute(text(
         """
         SELECT DISTINCT ON (osm_type, osm_id) osm_type, osm_id, attr_hash, attrs
         FROM observation
+        WHERE source = :src
         ORDER BY osm_type, osm_id, observed_at DESC, id DESC
         """
-    ))
+    ), {"src": source})
     state: dict[tuple[str, int], dict] = {}
     for r in obs:
         state[(r.osm_type, r.osm_id)] = {"hash": r.attr_hash, "attrs": r.attrs or {}}
@@ -148,8 +153,8 @@ def write_run(engine: Engine, records: list[dict], observed_at: datetime,
                "deleted": 0, "unchanged": 0, "observations_inserted": 0}
 
     with engine.begin() as conn:  # eine Transaktion, all-or-nothing
-        prev = _latest_state(conn)
-        first_run = not prev
+        prev = _latest_state(conn, source)
+        first_run = not prev  # erster Lauf DIESER Quelle = Baseline, keine Events
         cls = classify(prev, {k: v["hash"] for k, v in seen.items()})
 
         # 1) object upsern (present=true) -------------------------------------
