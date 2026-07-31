@@ -19,9 +19,9 @@ import {
   CATEGORIES,
   CATEGORY_BY_ID,
   EVENT_META,
-  NO_SUBTYPE,
   REFINED,
   categoryColorExpression,
+  curatedLabel,
   eventColorExpression,
   subtypeLabel,
 } from "./categories";
@@ -439,10 +439,14 @@ function hideToast(): void {
   document.getElementById("toast")?.setAttribute("hidden", "");
 }
 
+// Sammel-Schlüssel für Features ohne kuratierten Untertyp: keine eigene Zeile
+// im Drilldown, aber beim Isolieren ("nur dieser Untertyp") mit ausblendbar.
+const SUB_REST = "∅";
+
 // --- Filter -----------------------------------------------------------------
 function baseFilter(): maplibregl.FilterSpecification {
-  // Untertyp pro Feature (fehlend -> NO_SUBTYPE), als Komposit-Schlüssel.
-  const subVal: unknown = ["case", ["has", "subtype"], ["to-string", ["get", "subtype"]], NO_SUBTYPE];
+  // Untertyp pro Feature (fehlend -> Sammel-Schlüssel), als Komposit-Schlüssel.
+  const subVal: unknown = ["case", ["has", "subtype"], ["to-string", ["get", "subtype"]], SUB_REST];
   const composite: unknown = ["concat", ["to-string", ["get", "category"]], "::", subVal];
   return [
     "all",
@@ -493,7 +497,8 @@ function buildLegend(stats: StatsResponse): void {
   for (const c of CATEGORIES) {
     const total = stats.by_category[c.id] ?? 0;
     const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
-    const hasSubs = !!subs && Object.keys(subs).length > 0;
+    // Drilldown nur, wenn es kuratierte Untertypen zu zeigen gibt.
+    const hasSubs = !!subs && Object.keys(subs).some((s) => curatedLabel(s) !== null);
     const off = hiddenCategories.has(c.id);
     const delay = CATEGORIES.indexOf(c) * 35;
 
@@ -531,29 +536,19 @@ function renderDetail(catId: string): void {
   title.textContent = cat.label;
   (dot as HTMLElement).style.background = cat.color;
 
-  // Langer Freitext-Schwanz (tower: ~74 Werte) -> Top-8 + Sammelzeile "andere".
-  const ordered = Object.entries(subs).sort((a, b) => b[1] - a[1]);
-  const TOP = 8;
+  // Nur kuratierte Untertypen (Ingest normalisiert auf kanonische IDs) — kein
+  // "(ohne Angabe)", keine Sammelzeile. Der Rest zählt in der Kachel-Summe mit
+  // und folgt dem Kategorie-Schalter als Ganzes.
+  const ordered = Object.entries(subs)
+    .filter(([sub]) => curatedLabel(sub) !== null)
+    .sort((a, b) => b[1] - a[1]);
   const rows: string[] = [];
-  for (const [sub, n] of ordered.slice(0, TOP)) {
-    const label = sub === NO_SUBTYPE ? NO_SUBTYPE : subtypeLabel(sub);
+  for (const [sub, n] of ordered) {
     const off = hiddenSubtypes.has(subKey(catId, sub));
     rows.push(
       `<div class="lg-sub${off ? " off" : ""}" data-cat="${catId}" data-sub="${escapeAttr(sub)}" role="button" tabindex="0">
-         <span class="lbl">${escapeHtml(label)}</span>
+         <span class="lbl">${escapeHtml(curatedLabel(sub)!)}</span>
          <span class="count">${de(n)}</span>
-       </div>`,
-    );
-  }
-  const rest = ordered.slice(TOP);
-  if (rest.length) {
-    const keys = rest.map(([s]) => subKey(catId, s));
-    const off = keys.every((k) => hiddenSubtypes.has(k));
-    const restCount = rest.reduce((acc, [, n]) => acc + n, 0);
-    rows.push(
-      `<div class="lg-sub lg-rest${off ? " off" : ""}" data-cat="${catId}" data-subs="${escapeAttr(JSON.stringify(rest.map(([s]) => s)))}" role="button" tabindex="0">
-         <span class="lbl">andere (${rest.length} Typen)</span>
-         <span class="count">${de(restCount)}</span>
        </div>`,
     );
   }
@@ -602,32 +597,26 @@ function wireLegend(): void {
     const cat = row.dataset.cat!;
     if (hiddenCategories.has(cat)) {
       // Kategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder an,
-      // NUR die geklickte Zeile sichtbar, alle anderen aus.
+      // NUR die geklickte Zeile sichtbar — alle anderen Zeilen UND der Rest
+      // ohne kuratierten Untertyp aus.
       hiddenCategories.delete(cat);
       const tile = tileOf(cat);
       tile?.classList.remove("off");
       tile?.setAttribute("aria-pressed", "true");
       document.getElementById("legend-detail")?.classList.remove("cat-off");
+      hiddenSubtypes.add(subKey(cat, SUB_REST));
       for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
         const isClicked = r === row;
-        for (const key of subKeysOf(r, cat)) {
-          if (isClicked) hiddenSubtypes.delete(key);
-          else hiddenSubtypes.add(key);
-        }
+        const key = subKey(cat, r.dataset.sub!);
+        if (isClicked) hiddenSubtypes.delete(key);
+        else hiddenSubtypes.add(key);
         r.classList.toggle("off", !isClicked);
       }
-    } else if (row.dataset.subs) {
-      // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
-      const vals = JSON.parse(row.dataset.subs) as string[];
-      const turningOff = !row.classList.contains("off");
-      for (const v of vals) {
-        const key = subKey(cat, v);
-        if (turningOff) hiddenSubtypes.add(key);
-        else hiddenSubtypes.delete(key);
-      }
-      row.classList.toggle("off", turningOff);
     } else {
       toggle(hiddenSubtypes, subKey(cat, row.dataset.sub!), row);
+      // Sobald wieder eine Zeile aktiv geschaltet wird, endet die Isolation —
+      // der nicht kuratierte Rest kommt mit zurück.
+      if (!row.classList.contains("off")) hiddenSubtypes.delete(subKey(cat, SUB_REST));
     }
     applyFilters();
   };
@@ -643,14 +632,20 @@ function wireLegend(): void {
   list.addEventListener("click", (e) => onSubRow(e.target as HTMLElement));
   list.addEventListener("keydown", keyable(onSubRow));
   document.getElementById("detail-back")?.addEventListener("click", showGrid);
+  document.getElementById("detail-all")?.addEventListener("click", () => {
+    if (detailCat) resetSubtypes(detailCat);
+  });
 }
 
-// Komposit-Schlüssel einer Untertyp-Zeile (Einzeltyp oder Sammelzeile "andere").
-function subKeysOf(row: HTMLElement, cat: string): string[] {
-  if (row.dataset.subs) {
-    return (JSON.parse(row.dataset.subs) as string[]).map((v) => subKey(cat, v));
+// Alle Untertyp-Filter einer Kategorie zurücksetzen (inkl. Isolation/Rest).
+function resetSubtypes(cat: string): void {
+  for (const key of [...hiddenSubtypes]) {
+    if (key.startsWith(`${cat}::`)) hiddenSubtypes.delete(key);
   }
-  return [subKey(cat, row.dataset.sub!)];
+  for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
+    r.classList.remove("off");
+  }
+  applyFilters();
 }
 
 function toggle(set: Set<string>, key: string, row: HTMLElement): void {

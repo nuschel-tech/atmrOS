@@ -49,59 +49,38 @@ export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
 // kein Sendemast, eine Ortsnetzstation kein Umspannwerk).
 export const REFINED = new Set(["substation", "tower", "mast"]);
 
-// Platzhalter für fehlende Untertyp-Angabe — ehrlich sichtbar, nicht verschluckt.
-export const NO_SUBTYPE = "(ohne Angabe)";
-
-// Bekannte OSM-Untertypwerte -> lesbares Label. Unbekannte fallen auf den
-// Rohwert zurück.
+// Kuratierte Untertypen: der Ingest normalisiert die Roh-Tags auf diese
+// kanonischen IDs (pipeline/atmros/config.py SUBTYPE_MAP — dort ist die
+// Taxonomie definiert, hier stehen nur die Anzeige-Labels). Was keine
+// kanonische ID trägt, erscheint nicht im Drilldown — die Roh-Tags bleiben
+// im Profiler-Panel vollständig sichtbar (Quelle lügt nicht).
 const SUBTYPE_LABELS: Record<string, string> = {
-  // power=substation -> substation=*
-  minor_distribution: "Ortsnetzstation",
+  // substation
+  minor_distribution: "Ortsnetzstationen",
   distribution: "Verteilnetz",
-  transmission: "Übertragungsnetz (Umspannwerk)",
-  traction: "Bahnstrom",
+  transmission: "Übertragungsnetz",
+  generation: "Kraftwerkseinspeisung",
   industrial: "Industrie",
-  converter: "Konverter (HGÜ)",
-  transition: "Übergang Freileitung/Kabel",
-  generation: "Kraftwerk (Erzeugung)",
-  transformer: "Trafostation",
-  transformer_tower: "Turmstation",
-  kiosk: "Trafokiosk",
-  compensation: "Kompensationsanlage",
-  // man_made=tower / mast -> tower:type=*
-  communication: "Kommunikation",
-  telecommunication: "Telekommunikation",
-  radio: "Funkturm",
-  radar: "Radarturm",
-  water: "Wasserturm",
-  bell_tower: "Kirch-/Glockenturm",
-  observation: "Aussichtsturm",
-  watchtower: "Wachturm",
-  watch_tower: "Wachturm",
-  cooling: "Kühlturm",
-  lighting: "Beleuchtung",
-  defensive: "Wehrturm",
-  lightning_protection: "Blitzschutz",
-  monitoring: "Messturm",
-  diving: "Sprungturm",
-  siren: "Sirene",
-  advertising: "Werbeturm",
-  tent: "Zeltmast",
-  hose: "Schlauchturm",
-  climbing: "Kletterturm",
-  chimney: "Schornstein",
-  minaret: "Minarett",
-  clock: "Uhrturm",
-  clock_tower: "Uhrturm",
-  ventilation: "Lüftungsturm",
-  staircase: "Treppenturm",
-  monument: "Denkmalturm",
-  silo: "Silo",
-  aircraft_control: "Flugsicherung",
-  air_traffic_control: "Flugsicherung",
-  airport_control: "Flugsicherung",
+  traction: "Bahnstrom",
+  converter: "HGÜ-Konverter",
+  // tower / mast
+  communication: "Funk & Telekommunikation",
+  bell_tower: "Glockentürme",
+  defensive: "Wehr- & Wachtürme",
+  observation: "Aussichtstürme",
+  lighting: "Flutlicht & Beleuchtung",
+  cooling: "Kühltürme",
+  water: "Wassertürme",
+  siren: "Sirenen",
+  monitoring: "Messmasten",
 };
 
+// Nur kuratierte Untertypen bekommen eine Drilldown-Zeile.
+export function curatedLabel(value: string): string | null {
+  return SUBTYPE_LABELS[value] ?? null;
+}
+
+// Panel/Änderungsliste: kuratiertes Label, sonst ehrlicher Rohwert.
 export function subtypeLabel(value: string): string {
   return SUBTYPE_LABELS[value] ?? value;
 }
