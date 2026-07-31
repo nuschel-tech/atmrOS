@@ -353,8 +353,30 @@ function wireMapControls(): void {
   document.getElementById("zoom-in")?.addEventListener("click", () => map?.zoomIn());
   document.getElementById("zoom-out")?.addEventListener("click", () => map?.zoomOut());
   const dialog = document.getElementById("info-dialog") as MdDialog | null;
-  document.getElementById("info-open")?.addEventListener("click", () => dialog?.show());
+  document.getElementById("dock-info")?.addEventListener("click", () => dialog?.show());
   document.getElementById("info-close")?.addEventListener("click", () => dialog?.close());
+  // Dock: Karte = Desktop (alle Module zu), System = Ketten-Ansicht.
+  document.getElementById("dock-map")?.addEventListener("click", () => {
+    setChanges(false);
+    setSystem(false);
+    document.getElementById("panel")?.classList.remove("open");
+    selected = null;
+    applyFilters();
+  });
+  document.getElementById("dock-system")?.addEventListener("click", () => setSystem(!systemOn));
+  document.getElementById("system-close")?.addEventListener("click", () => setSystem(false));
+}
+
+// Dock-Zustand: "Karte" gilt als aktiv, wenn kein Modul offen ist.
+function updateDock(): void {
+  const set = (id: string, on: boolean): void => {
+    const el = document.getElementById(id);
+    el?.classList.toggle("active", on);
+    el?.setAttribute("aria-pressed", String(on));
+  };
+  set("dock-map", !changesOn && !systemOn);
+  set("changes-toggle", changesOn);
+  set("dock-system", systemOn);
 }
 
 function setInfoStand(iso: string | null): void {
@@ -376,12 +398,85 @@ function toggleChanges(): void {
 function setChanges(on: boolean): void {
   changesOn = on;
   document.getElementById("changes")?.toggleAttribute("hidden", !on);
-  document.getElementById("changes-toggle")?.setAttribute("aria-pressed", String(on));
   if (map?.getLayer(CHG_LAYER)) {
     map.setLayoutProperty(CHG_LAYER, "visibility", on ? "visible" : "none");
   }
   setChangesPulse(on);
+  updateDock();
   if (on) void loadChanges();
+}
+
+// --- System-Modul: die Kette sichtbar gemacht --------------------------------
+let systemOn = false;
+
+function setSystem(on: boolean): void {
+  systemOn = on;
+  document.getElementById("system")?.classList.toggle("open", on);
+  updateDock();
+  if (on) void renderSystem();
+}
+
+async function renderSystem(): Promise<void> {
+  const body = document.getElementById("system-body");
+  if (!body) return;
+  body.innerHTML = `<div class="spinner">// lese Kette …</div>`;
+
+  const j = async (url: string, creds = false): Promise<Record<string, unknown> | null> => {
+    try {
+      const res = await fetch(url, creds ? { credentials: "include" } : undefined);
+      return res.ok ? ((await res.json()) as Record<string, unknown>) : null;
+    } catch { return null; }
+  };
+  const [status, health, changes] = await Promise.all([
+    j(`${API_BASE}/status`),
+    j(`${API_BASE}/health`),
+    j(`${API_BASE}/changes`, true) as Promise<{ count: number; changes: ChangeItem[] } | null>,
+  ]);
+  const stats = latestStats ?? (await fetchStats());
+
+  const row = (k: string, v: string): string =>
+    `<div class="attr-row"><div class="k">${escapeHtml(k)}</div><div class="val">${v}</div></div>`;
+
+  // Kette: läuft gerade ein Ingest? Wie frisch sind die Daten?
+  const st = String(status?.status ?? "unbekannt");
+  const stLabel = st === "running"
+    ? `<span class="sys-run">INGEST LÄUFT</span>` : escapeHtml(st);
+  let html = `<div class="section-label">Kette</div><div class="attrs">`;
+  html += row("Status", stLabel);
+  html += row("Datenstand", stats?.latest_observed_at ? escapeHtml(formatDate(stats.latest_observed_at)) : "–");
+  html += row("Objekte gesamt", escapeHtml((stats?.total ?? 0).toLocaleString("de-DE")));
+  html += row("API", health ? `ok · v${escapeHtml(String(health.version ?? "?"))}` : "nicht erreichbar");
+  html += `</div>`;
+
+  // Quellen: Stand + Objekte je Quelle — die Kern-Signatur als Tabelle.
+  html += `<div class="section-label">Quellen</div><div class="attrs">`;
+  for (const src of SOURCES) {
+    const stand = stats?.by_source?.[src.db];
+    const total = stats
+      ? src.categories.reduce((a, c) => a + (stats.by_category[c] ?? 0), 0) : 0;
+    html += row(src.label,
+      `${escapeHtml(total.toLocaleString("de-DE"))} Objekte · ` +
+      (stand ? `Stand ${escapeHtml(formatDate(stand))}` : "noch kein Lauf") +
+      `<br><span class="sys-src">${escapeHtml(src.db)}</span>`);
+  }
+  html += `</div>`;
+
+  // Ereignisse der letzten 7 Tage (Diff-Ausbeute der Kette).
+  html += `<div class="section-label">Ereignisse · 7 Tage</div>`;
+  if (changes?.changes) {
+    const byType: Record<string, number> = {};
+    for (const c of changes.changes) byType[c.event_type] = (byType[c.event_type] ?? 0) + 1;
+    html += `<div class="sys-events">`;
+    for (const [type, meta] of Object.entries(EVENT_META)) {
+      html += `<span class="chg-badge ${meta.cls}">${meta.label} ${(byType[type] ?? 0).toLocaleString("de-DE")}</span>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="panel-empty">Änderungen nicht ladbar.</div>`;
+  }
+
+  html += `<div class="hist">// jede Zeile dieser Ansicht kommt live aus der Kette — nichts ist Dekoration</div>`;
+  body.innerHTML = html;
 }
 
 // Puls auf den Änderungs-Highlights: das Gedächtnis atmet. Nur solange die

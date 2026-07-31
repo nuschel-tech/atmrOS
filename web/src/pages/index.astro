@@ -36,11 +36,27 @@ const VERSION = pkg.version;
       <div class="brand">atmr<span class="os">OS</span></div>
     </header>
 
-    <div class="hud-actions">
-      <button id="changes-toggle" class="hud-btn" aria-pressed="false">
-        Änderungen<span id="changes-count" class="hud-badge" hidden></span>
+    <!-- Dock: die Taskbar des OS. Die Karte ist der Desktop, Module (Änderungen,
+         System, Info) sind Overlays darüber — nie ein Seitenwechsel. -->
+    <nav class="dock" aria-label="Module">
+      <button id="dock-map" class="dock-btn" aria-pressed="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="m15 21-6-2.1-4.65 1.8A1 1 0 0 1 3 19.77V5.83a1 1 0 0 1 .67-.94L9 3l6 2.1 4.65-1.8A1 1 0 0 1 21 4.23v13.94a1 1 0 0 1-.67.94zM14 18.55V6.86l-4-1.4v11.69z"/></svg>
+        <span class="lbl">Karte</span>
       </button>
-    </div>
+      <button id="changes-toggle" class="dock-btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13 3a9 9 0 1 0 8.95 10h-2.02A7 7 0 1 1 13 5c1.93 0 3.68.79 4.95 2.05L15 10h7V3l-2.64 2.64A8.96 8.96 0 0 0 13 3m-1 5v5l4.25 2.52.77-1.28-3.52-2.09V8z"/></svg>
+        <span class="lbl">Änderungen</span>
+        <span id="changes-count" class="hud-badge dock-badge" hidden></span>
+      </button>
+      <button id="dock-system" class="dock-btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 3h2v3h2V3h2v3h2a1 1 0 0 1 1 1v2h3v2h-3v2h3v2h-3v2a1 1 0 0 1-1 1h-2v3h-2v-3h-2v3H9v-3H7a1 1 0 0 1-1-1v-2H3v-2h3v-2H3V9h3V7a1 1 0 0 1 1-1h2zM8 8v8h8V8zm2 2h4v4h-4z"/></svg>
+        <span class="lbl">System</span>
+      </button>
+      <button id="dock-info" class="dock-btn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16"/></svg>
+        <span class="lbl">Info</span>
+      </button>
+    </nav>
 
     <section id="changes" class="changes-drawer" hidden aria-label="Änderungen">
       <div class="changes-head">
@@ -101,7 +117,7 @@ const VERSION = pkg.version;
       <md-filled-button id="toast-apply">aktualisieren</md-filled-button>
     </div>
 
-    <!-- Zoom + Info als gemeinsame M3-Control-Säule (ersetzt MapLibre-Defaults) -->
+    <!-- Zoom als M3-Control-Säule (Info wohnt jetzt im Dock) -->
     <div class="map-controls">
       <md-icon-button id="zoom-in" aria-label="Hineinzoomen">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
@@ -109,11 +125,22 @@ const VERSION = pkg.version;
       <md-icon-button id="zoom-out" aria-label="Herauszoomen">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
       </md-icon-button>
-      <md-icon-button id="info-open" aria-label="Info und Lizenzen">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16"/></svg>
-      </md-icon-button>
     </div>
     <span class="map-attrib">© OpenStreetMap-Mitwirkende</span>
+
+    <!-- System-Modul: die Kette sichtbar gemacht — Quellen, Stände, Ereignisse -->
+    <section id="system" class="panel system" aria-label="System">
+      <div class="panel-head">
+        <div class="title">
+          <div class="cat">System</div>
+          <div class="id">atmrOS v{VERSION}</div>
+        </div>
+        <md-icon-button id="system-close" aria-label="Schließen">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+        </md-icon-button>
+      </div>
+      <div id="system-body" class="panel-body"></div>
+    </section>
 
     <!-- Zentraler Info-Dialog: Version, Datenstand, Quellen, Lizenzen, Rechtliches -->
     <md-dialog id="info-dialog">
