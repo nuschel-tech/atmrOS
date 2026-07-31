@@ -30,6 +30,7 @@ import { M3 } from "./categories";
 
 const SRC = "atmros-infra";
 const LAYER = "infra-points";
+const LAYER_GLOW = "infra-glow";
 const LAYER_SEL = "infra-selected";
 const CHG_SRC = "atmros-changes";
 const CHG_LAYER = "changes-highlight";
@@ -222,6 +223,25 @@ export async function initMap(): Promise<void> {
       maxzoom: 14,
     });
 
+    // GLOW unter den Punkten: bei Übersicht verschmelzen die geblurrten
+    // Scheiben zu Lichtfeldern ("die unsichtbare Verkabelung leuchtet"),
+    // nah dran wird der Glow zum dezenten Halo. Im Light-Theme gedimmt —
+    // Leuchten funktioniert physisch nur auf dunklem Grund.
+    map.addLayer({
+      id: LAYER_GLOW,
+      type: "circle",
+      source: SRC,
+      "source-layer": "infra",
+      paint: {
+        "circle-color": categoryColorExpression() as maplibregl.DataDrivenPropertyValueSpecification<string>,
+        "circle-blur": 1.2,
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 7, 8, 10, 11, 13, 14, 18],
+        "circle-opacity": PREFERS_LIGHT
+          ? ["interpolate", ["linear"], ["zoom"], 5, 0.14, 9, 0.15, 12, 0.08, 14, 0.05]
+          : ["interpolate", ["linear"], ["zoom"], 5, 0.28, 9, 0.3, 12, 0.16, 14, 0.09],
+      },
+    });
+
     map.addLayer({
       id: LAYER,
       type: "circle",
@@ -229,10 +249,11 @@ export async function initMap(): Promise<void> {
       "source-layer": "infra",
       paint: {
         "circle-color": categoryColorExpression() as maplibregl.DataDrivenPropertyValueSpecification<string>,
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.6, 10, 3, 14, 5],
-        "circle-opacity": 0.85,
-        "circle-stroke-width": 0.4,
-        "circle-stroke-color": "#000000",
+        // Übersicht: winzige helle Kerne im Lichtfeld; nah: klickbare Punkte.
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 1.1, 8, 2.2, 10, 3, 14, 5.5],
+        "circle-opacity": 0.92,
+        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 8, 0, 9, 0.5],
+        "circle-stroke-color": "#001417",
       },
     });
 
@@ -328,7 +349,35 @@ function setChanges(on: boolean): void {
   if (map?.getLayer(CHG_LAYER)) {
     map.setLayoutProperty(CHG_LAYER, "visibility", on ? "visible" : "none");
   }
+  setChangesPulse(on);
   if (on) void loadChanges();
+}
+
+// Puls auf den Änderungs-Highlights: das Gedächtnis atmet. Nur solange die
+// Ansicht offen ist; respektiert prefers-reduced-motion (dann statisch).
+let pulseRaf = 0;
+const PREFERS_REDUCED_MOTION =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+function setChangesPulse(on: boolean): void {
+  if (pulseRaf) cancelAnimationFrame(pulseRaf);
+  pulseRaf = 0;
+  if (!map?.getLayer(CHG_LAYER)) return;
+  if (!on || PREFERS_REDUCED_MOTION) {
+    map.setPaintProperty(CHG_LAYER, "circle-opacity", 0.18);
+    map.setPaintProperty(CHG_LAYER, "circle-stroke-opacity", 1);
+    return;
+  }
+  const t0 = performance.now();
+  const tick = (t: number): void => {
+    // Langsamer Sinus-Atem (~2,4 s Periode), Füllung 0,10–0,30, Ring 0,55–1.
+    const k = 0.5 + 0.5 * Math.sin((t - t0) / 380);
+    map!.setPaintProperty(CHG_LAYER, "circle-opacity", 0.1 + 0.2 * k);
+    map!.setPaintProperty(CHG_LAYER, "circle-stroke-opacity", 0.55 + 0.45 * k);
+    pulseRaf = requestAnimationFrame(tick);
+  };
+  pulseRaf = requestAnimationFrame(tick);
 }
 
 async function loadChanges(): Promise<void> {
@@ -473,6 +522,7 @@ function applyFilters(): void {
   if (!map) return; // degradierter Modus ohne Karte
   const base = baseFilter();
   map.setFilter(LAYER, base);
+  if (map.getLayer(LAYER_GLOW)) map.setFilter(LAYER_GLOW, base);
   if (selected) {
     map.setFilter(LAYER_SEL, [
       "all",

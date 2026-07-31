@@ -14,7 +14,7 @@
       "id": "background",
       "type": "background",
       "paint": {
-        "background-color": "#002a31"
+        "background-color": "#00262c"
       }
     },
     {
@@ -23,7 +23,7 @@
       "source": "protomaps",
       "source-layer": "earth",
       "paint": {
-        "fill-color": "#00343b"
+        "fill-color": "#002f36"
       }
     },
     {
@@ -33,7 +33,7 @@
       "source-layer": "landuse",
       "minzoom": 8,
       "paint": {
-        "fill-color": "#004049",
+        "fill-color": "#003841",
         "fill-opacity": 0.5
       }
     },
@@ -43,7 +43,7 @@
       "source": "protomaps",
       "source-layer": "water",
       "paint": {
-        "fill-color": "#262636"
+        "fill-color": "#2e2e44"
       }
     },
     {
@@ -53,7 +53,7 @@
       "source-layer": "buildings",
       "minzoom": 13,
       "paint": {
-        "fill-color": "#07535e",
+        "fill-color": "#004c57",
         "fill-opacity": 0.6
       }
     },
@@ -83,7 +83,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#004e59",
+        "line-color": "#004751",
         "line-width": [
           "interpolate",
           [
@@ -159,7 +159,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#35737f",
+        "line-color": "#3d7b86",
         "line-width": [
           "interpolate",
           [
@@ -250,7 +250,7 @@
       },
       "paint": {
         "text-color": "#93d0dd",
-        "text-halo-color": "#00343b",
+        "text-halo-color": "#002f36",
         "text-halo-width": 1.2
       }
     }

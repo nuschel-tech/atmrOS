@@ -130,23 +130,25 @@ function syncBasemap() {
   }
   const seedHue = Hct.fromInt(argbFromHex(SEED)).hue;
   const pal = TonalPalette.fromHueAndChroma(seedHue, SURFACE_CHROMA);
-  const waterPal = TonalPalette.fromHueAndChroma(285, 14); // Violett-Stich = Wasser
+  const waterPal = TonalPalette.fromHueAndChroma(285, 18); // Violett-Stich = Wasser
   const t = (tone) => hexFromArgb(pal.tone(tone));
   const w = (tone) => hexFromArgb(waterPal.tone(tone));
 
   // Dunkel: helle Linien auf dunklem Grund. Hell: dunkle Linien auf hellem Grund.
+  // Tiefen-Staffelung (v0.15): Flächen einen Tick dunkler, Wasser einen Tick
+  // leuchtender, Straßenhierarchie gespreizt — mehr Relief unter den Objekten.
   const paints = {
     dark: {
-      background: { "background-color": t(15) },
-      earth: { "fill-color": t(19) },
-      landuse: { "fill-color": t(24) },
-      water: { "fill-color": w(16) },
-      buildings: { "fill-color": t(32) },
-      roads_minor: { "line-color": t(30) },
+      background: { "background-color": t(13) },
+      earth: { "fill-color": t(17) },
+      landuse: { "fill-color": t(21) },
+      water: { "fill-color": w(20) },
+      buildings: { "fill-color": t(29) },
+      roads_minor: { "line-color": t(27) },
       roads_major: { "line-color": t(37) },
-      roads_highway: { "line-color": t(45) },
+      roads_highway: { "line-color": t(48) },
       boundaries: { "line-color": t(45) },
-      places_locality: { "text-color": t(80), "text-halo-color": t(19) },
+      places_locality: { "text-color": t(80), "text-halo-color": t(17) },
     },
     light: {
       background: { "background-color": t(95) },
