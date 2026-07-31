@@ -49,6 +49,26 @@ export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
   CATEGORIES.map((c) => [c.id, c]),
 );
 
+// --- Quellen: oberste Legenden-Ebene -----------------------------------------
+// Die Kern-Signatur von atmrOS als Navigation: erst die Quelle, dann was sie
+// liefert. Aktuell eine; jede Stufe-B-Quelle (PEGELONLINE, BNetzA-Register,
+// MaStR …) bekommt hier später ihren eigenen Eintrag mit eigenen Kategorien.
+export interface SourceDef {
+  id: string;
+  label: string;
+  sub: string; // Herkunfts-Zeile unterm Namen (Anbieter/Extrakt)
+  categories: string[];
+}
+
+export const SOURCES: SourceDef[] = [
+  {
+    id: "osm",
+    label: "OpenStreetMap",
+    sub: "Geofabrik · Bayern-Extrakt",
+    categories: CATEGORIES.map((c) => c.id),
+  },
+];
+
 // Kategorien, die ohne Untertyp zu grob sind (Ehrlichkeit: ein Kirchturm ist
 // kein Sendemast, eine Ortsnetzstation kein Umspannwerk).
 export const REFINED = new Set([

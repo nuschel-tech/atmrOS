@@ -188,10 +188,65 @@ html, body {
   max-width: min(400px, calc(100vw - 28px));
   animation: m3e-pop var(--md-duration-long) var(--md-motion-spring) 80ms both;
 }
+/* Quellen-Ansicht: eine Kachel pro Datenquelle (volle Breite, mit Herkunft). */
+.src-list {
+  display: flex; flex-direction: column; gap: 8px;
+  width: min(336px, calc(100vw - 52px));
+}
+.src-list[hidden] { display: none; }
+.src-tile {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 8px 11px 13px; border-radius: var(--md-shape-m);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid transparent;
+  cursor: pointer; user-select: none; min-width: 0;
+  transition: background var(--md-duration-short) var(--md-motion-standard),
+              transform var(--md-duration-short) var(--md-motion-spring);
+}
+.src-tile:hover { filter: brightness(1.08); transform: scale(1.02); }
+.src-tile .txt { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.src-tile .lbl {
+  font: var(--md-type-label);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.src-tile .sub {
+  font: var(--md-type-label-small); font-weight: 400; opacity: 0.75;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.src-tile .count {
+  margin-left: auto; flex: 0 0 auto;
+  font: var(--md-type-label-small); font-weight: 400; opacity: 0.7;
+}
+.src-tile .tile-expand {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: var(--md-shape-full);
+  flex: 0 0 auto; opacity: 0.8;
+}
+.src-tile .tile-expand:hover {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  opacity: 1;
+}
+.src-tile.off {
+  background: transparent;
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.75;
+}
+.src-tile.off .lbl { text-decoration: line-through; }
+.src-tile:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 1px; }
+
+/* Kategorien-Ansicht einer Quelle: Kopf (Zurück + Titel + Reset) + Grid. */
+.cat-view { width: min(336px, calc(100vw - 52px)); }
+.cat-view[hidden] { display: none; }
+/* Quelle aus -> alle Kategorien der Ansicht wirken deaktiviert. */
+.cat-view.src-off .cat-tile { opacity: 0.38; }
+.cat-view.src-off .cat-tile .lbl { text-decoration: line-through; }
+.cat-view.src-off .cat-tile:hover { opacity: 0.7; }
+
 /* Kachel-Grid: 2 Spalten, alle gleich breit (Quick-Settings-Muster). */
 .cat-grid {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
-  width: min(336px, calc(100vw - 52px));
 }
 .cat-grid[hidden] { display: none; }
 .lg-hint { grid-column: 1 / -1; color: var(--md-sys-color-on-surface-variant); font: var(--md-type-label-small); }

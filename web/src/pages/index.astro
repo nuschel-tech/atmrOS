@@ -50,12 +50,24 @@ const VERSION = pkg.version;
     </section>
 
     <aside class="legend">
-      <!-- Ansicht 1: Kategorie-Kacheln (2-Spalten-Grid, gleich breit) -->
-      <div id="legend-grid" class="cat-grid"><div class="lg-hint">// lade Zähler …</div></div>
+      <!-- Ansicht 0: Quellen — die Kern-Signatur als Einstieg. Klick auf die
+           Quelle zeigt, was sie liefert (Kategorien -> Untertypen). -->
+      <div id="legend-sources" class="src-list"><div class="lg-hint">// lade Quellen …</div></div>
+      <!-- Ansicht 1: Kategorien EINER Quelle (2-Spalten-Grid, gleich breit) -->
+      <div id="legend-cats" class="cat-view" hidden>
+        <div class="detail-head">
+          <md-icon-button id="cats-back" aria-label="Zurück zu den Quellen">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="m10.9 19.1-6.4-6.4a1 1 0 0 1 0-1.4l6.4-6.4 1.4 1.4L7.7 11H20v2H7.7l4.6 4.7z"/></svg>
+          </md-icon-button>
+          <span id="cats-title" class="detail-title"></span>
+          <md-text-button id="cats-all" class="detail-all">zurücksetzen</md-text-button>
+        </div>
+        <div id="legend-grid" class="cat-grid"></div>
+      </div>
       <!-- Ansicht 2: Untertypen-Drilldown (in derselben Card, mit Zurück) -->
       <div id="legend-detail" class="cat-detail" hidden>
         <div class="detail-head">
-          <md-icon-button id="detail-back" aria-label="Zurück zu allen Kategorien">
+          <md-icon-button id="detail-back" aria-label="Zurück zu den Kategorien">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="m10.9 19.1-6.4-6.4a1 1 0 0 1 0-1.4l6.4-6.4 1.4 1.4L7.7 11H20v2H7.7l4.6 4.7z"/></svg>
           </md-icon-button>
           <span id="detail-dot" class="dot"></span>

@@ -20,6 +20,7 @@ import {
   CATEGORY_BY_ID,
   EVENT_META,
   REFINED,
+  SOURCES,
   categoryColorExpression,
   curatedLabel,
   eventColorExpression,
@@ -71,10 +72,22 @@ interface ObjectDetail {
 }
 
 // --- Filter-Zustand ---------------------------------------------------------
+const hiddenSources = new Set<string>();
 const hiddenCategories = new Set<string>();
 const hiddenSubtypes = new Set<string>(); // Schlüssel: `${category}::${subVal}`
 let selected: { type: string; id: number } | null = null;
 let map: maplibregl.Map;
+
+// Quelle aus -> alle ihre Kategorien wirken ausgeblendet, OHNE die
+// Einzel-Auswahl des Nutzers zu überschreiben (Quelle an -> Auswahl wie vorher).
+function effectiveHiddenCategories(): Set<string> {
+  const out = new Set(hiddenCategories);
+  for (const src of SOURCES) {
+    if (!hiddenSources.has(src.id)) continue;
+    for (const cat of src.categories) out.add(cat);
+  }
+  return out;
+}
 
 // --- Daten-Version (Cache-Busting fürs "neuer Stand"-Update) ----------------
 // Die Tile-URL trägt ?v=<Stand>. Ändert sich der Stand (nach einem Ingest),
@@ -450,7 +463,7 @@ function baseFilter(): maplibregl.FilterSpecification {
   const composite: unknown = ["concat", ["to-string", ["get", "category"]], "::", subVal];
   return [
     "all",
-    ["!", ["in", ["get", "category"], ["literal", [...hiddenCategories]]]],
+    ["!", ["in", ["get", "category"], ["literal", [...effectiveHiddenCategories()]]]],
     ["!", ["in", composite, ["literal", [...hiddenSubtypes]]]],
   ] as unknown as maplibregl.FilterSpecification;
 }
@@ -482,16 +495,59 @@ async function fetchStats(): Promise<StatsResponse | null> {
   }
 }
 
-// Kategorien als gleich breite Kacheln (2-Spalten-Grid, Quick-Settings-Muster).
-// Untertypen (Ehrlichkeits-Feature) als Drilldown IN derselben Card: Pfeil ->
-// Detailansicht mit Zurück-Button, kein schwebendes Popover.
+// Legende als dreistufiger Drilldown IN derselben Card, kein schwebendes
+// Popover: Quellen (die Kern-Signatur als Einstieg) -> Kategorien der Quelle
+// (gleich breite Kacheln, Quick-Settings-Muster) -> kuratierte Untertypen.
+let legendView: "sources" | "cats" | "subs" = "sources";
+let currentSource: string | null = null;
 let detailCat: string | null = null;
 
 const de = (n: number): string => n.toLocaleString("de-DE");
 
+const CHEVRON =
+  `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">` +
+  `<path d="M9.3 6.7a1 1 0 0 1 1.4-1.4l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4-1.4L14.6 12z"/></svg>`;
+
+function showLegendView(view: "sources" | "cats" | "subs"): void {
+  document.getElementById("legend-sources")?.toggleAttribute("hidden", view !== "sources");
+  document.getElementById("legend-cats")?.toggleAttribute("hidden", view !== "cats");
+  document.getElementById("legend-detail")?.toggleAttribute("hidden", view !== "subs");
+  legendView = view;
+  if (view !== "subs") detailCat = null;
+  if (view === "sources") currentSource = null;
+}
+
+// --- Ansicht 0: Quellen ------------------------------------------------------
+function buildSources(stats: StatsResponse): void {
+  const host = document.getElementById("legend-sources");
+  if (!host) return;
+  const stand = stats.latest_observed_at
+    ? new Date(stats.latest_observed_at).toLocaleDateString("de-DE",
+        { day: "2-digit", month: "2-digit", year: "numeric" })
+    : null;
+  const rows: string[] = [];
+  for (const [i, src] of SOURCES.entries()) {
+    const total = src.categories.reduce(
+      (acc, cat) => acc + (stats.by_category[cat] ?? 0), 0);
+    const off = hiddenSources.has(src.id);
+    rows.push(
+      `<div class="src-tile${off ? " off" : ""} m3e-pop" style="--m3e-delay:${i * 35}ms" ` +
+      `role="button" tabindex="0" aria-pressed="${!off}" data-src="${src.id}">` +
+      `<span class="txt"><span class="lbl">${escapeHtml(src.label)}</span>` +
+      `<span class="sub">${escapeHtml(src.sub)}${stand ? ` · Stand ${stand}` : ""}</span></span>` +
+      `<span class="count">${de(total)}</span>` +
+      `<span class="tile-expand" role="button" tabindex="0" data-expand-src="${src.id}" ` +
+      `aria-label="Kategorien von ${escapeAttr(src.label)}">${CHEVRON}</span></div>`,
+    );
+  }
+  host.innerHTML = rows.join("");
+}
+
+// --- Ansicht 1: Kategorien einer Quelle --------------------------------------
 function buildLegend(stats: StatsResponse): void {
   const host = document.getElementById("legend-grid");
   if (!host) return;
+  buildSources(stats);
   const tiles: string[] = [];
 
   for (const c of CATEGORIES) {
@@ -504,9 +560,7 @@ function buildLegend(stats: StatsResponse): void {
 
     const expand = hasSubs
       ? `<span class="tile-expand" role="button" tabindex="0" data-expand="${c.id}" ` +
-        `aria-label="Untertypen von ${c.label}">` +
-        `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">` +
-        `<path d="M9.3 6.7a1 1 0 0 1 1.4-1.4l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4-1.4L14.6 12z"/></svg></span>`
+        `aria-label="Untertypen von ${c.label}">${CHEVRON}</span>`
       : "";
 
     tiles.push(
@@ -522,16 +576,30 @@ function buildLegend(stats: StatsResponse): void {
   if (detailCat) renderDetail(detailCat);
 }
 
-// --- Untertypen-Drilldown (in der Card) --------------------------------------
+function sourceOf(catId: string): string | null {
+  return SOURCES.find((s) => s.categories.includes(catId))?.id ?? null;
+}
+
+function showCats(srcId: string): void {
+  const src = SOURCES.find((s) => s.id === srcId);
+  const title = document.getElementById("cats-title");
+  if (!src || !title) return;
+  title.textContent = src.label;
+  document.getElementById("legend-cats")
+    ?.classList.toggle("src-off", hiddenSources.has(srcId));
+  currentSource = srcId;
+  showLegendView("cats");
+}
+
+// --- Ansicht 2: Untertypen-Drilldown -----------------------------------------
 function renderDetail(catId: string): void {
-  const grid = document.getElementById("legend-grid");
   const detail = document.getElementById("legend-detail");
   const list = document.getElementById("subs-list");
   const title = document.getElementById("detail-title");
   const dot = document.getElementById("detail-dot");
   const subs = latestStats?.by_subtype?.[catId];
   const cat = CATEGORY_BY_ID[catId];
-  if (!grid || !detail || !list || !title || !dot || !subs || !cat) return;
+  if (!detail || !list || !title || !dot || !subs || !cat) return;
 
   title.textContent = cat.label;
   (dot as HTMLElement).style.background = cat.color;
@@ -553,16 +621,9 @@ function renderDetail(catId: string): void {
     );
   }
   list.innerHTML = rows.join("");
-  detail.classList.toggle("cat-off", hiddenCategories.has(catId));
-  grid.setAttribute("hidden", "");
-  detail.removeAttribute("hidden");
+  detail.classList.toggle("cat-off", effectiveHiddenCategories().has(catId));
+  showLegendView("subs");
   detailCat = catId;
-}
-
-function showGrid(): void {
-  document.getElementById("legend-detail")?.setAttribute("hidden", "");
-  document.getElementById("legend-grid")?.removeAttribute("hidden");
-  detailCat = null;
 }
 
 function tileOf(catId: string): HTMLElement | null {
@@ -570,9 +631,38 @@ function tileOf(catId: string): HTMLElement | null {
 }
 
 function wireLegend(): void {
+  const srcHost = document.getElementById("legend-sources");
   const host = document.getElementById("legend-grid");
   const list = document.getElementById("subs-list");
-  if (!host || !list) return;
+  if (!srcHost || !host || !list) return;
+
+  // Nach Set-Änderungen alles aus dem Zustand neu zeichnen — eine Wahrheit,
+  // kein Klassen-Gefummel über drei Ansichten hinweg.
+  const refresh = (): void => {
+    if (latestStats) buildLegend(latestStats);
+    if (currentSource) {
+      document.getElementById("legend-cats")
+        ?.classList.toggle("src-off", hiddenSources.has(currentSource));
+    }
+    applyFilters();
+  };
+
+  const onSourceArea = (target: HTMLElement): void => {
+    // 1) Pfeil: reinschauen, was die Quelle liefert — NICHT umschalten.
+    const expand = target.closest<HTMLElement>("[data-expand-src]");
+    if (expand) {
+      showCats(expand.dataset.expandSrc!);
+      return;
+    }
+    // 2) Kachel: ganze Quelle umschalten (Einzel-Auswahl bleibt erhalten).
+    const tile = target.closest<HTMLElement>(".src-tile");
+    if (tile) {
+      const src = tile.dataset.src!;
+      toggle(hiddenSources, src, tile);
+      tile.setAttribute("aria-pressed", String(!hiddenSources.has(src)));
+      applyFilters();
+    }
+  };
 
   const onTileArea = (target: HTMLElement): void => {
     // 1) Pfeil: Drilldown öffnen — Kategorie NICHT umschalten.
@@ -581,10 +671,22 @@ function wireLegend(): void {
       renderDetail(expand.dataset.expand!);
       return;
     }
-    // 2) Kachel: Kategorie umschalten.
     const tile = target.closest<HTMLElement>(".cat-tile");
-    if (tile) {
-      const cat = tile.dataset.cat!;
+    if (!tile) return;
+    const cat = tile.dataset.cat!;
+    const src = sourceOf(cat);
+    if (src && hiddenSources.has(src)) {
+      // Quelle ist aus -> diese Kategorie isolieren: Quelle wieder an,
+      // NUR die geklickte Kategorie sichtbar (gleiches Muster wie Untertypen).
+      hiddenSources.delete(src);
+      const srcDef = SOURCES.find((s) => s.id === src)!;
+      for (const c of srcDef.categories) {
+        if (c === cat) hiddenCategories.delete(c);
+        else hiddenCategories.add(c);
+      }
+      refresh(); // Zustand über alle Ansichten neu zeichnen
+    } else {
+      // 2) Kachel: Kategorie umschalten.
       toggle(hiddenCategories, cat, tile);
       tile.setAttribute("aria-pressed", String(!hiddenCategories.has(cat)));
       applyFilters();
@@ -595,14 +697,13 @@ function wireLegend(): void {
     const row = target.closest<HTMLElement>(".lg-sub");
     if (!row) return;
     const cat = row.dataset.cat!;
-    if (hiddenCategories.has(cat)) {
-      // Kategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder an,
-      // NUR die geklickte Zeile sichtbar — alle anderen Zeilen UND der Rest
-      // ohne kuratierten Untertyp aus.
+    if (effectiveHiddenCategories().has(cat)) {
+      // Kategorie (oder ihre Quelle) ist aus -> diesen Untertyp isolieren:
+      // Quelle + Kategorie wieder an, NUR die geklickte Zeile sichtbar — alle
+      // anderen Zeilen UND der Rest ohne kuratierten Untertyp aus.
+      const src = sourceOf(cat);
+      if (src) hiddenSources.delete(src);
       hiddenCategories.delete(cat);
-      const tile = tileOf(cat);
-      tile?.classList.remove("off");
-      tile?.setAttribute("aria-pressed", "true");
       document.getElementById("legend-detail")?.classList.remove("cat-off");
       hiddenSubtypes.add(subKey(cat, SUB_REST));
       for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
@@ -612,6 +713,10 @@ function wireLegend(): void {
         else hiddenSubtypes.add(key);
         r.classList.toggle("off", !isClicked);
       }
+      if (latestStats) buildSources(latestStats);
+      const tile = tileOf(cat);
+      tile?.classList.remove("off");
+      tile?.setAttribute("aria-pressed", "true");
     } else {
       toggle(hiddenSubtypes, subKey(cat, row.dataset.sub!), row);
       // Sobald wieder eine Zeile aktiv geschaltet wird, endet die Isolation —
@@ -627,21 +732,44 @@ function wireLegend(): void {
       handler(e.target as HTMLElement);
     }
   };
+  srcHost.addEventListener("click", (e) => onSourceArea(e.target as HTMLElement));
+  srcHost.addEventListener("keydown", keyable(onSourceArea));
   host.addEventListener("click", (e) => onTileArea(e.target as HTMLElement));
   host.addEventListener("keydown", keyable(onTileArea));
   list.addEventListener("click", (e) => onSubRow(e.target as HTMLElement));
   list.addEventListener("keydown", keyable(onSubRow));
-  document.getElementById("detail-back")?.addEventListener("click", showGrid);
+  document.getElementById("cats-back")?.addEventListener("click", () => showLegendView("sources"));
+  document.getElementById("detail-back")?.addEventListener("click", () => {
+    if (currentSource) showCats(currentSource);
+    else showLegendView("sources");
+  });
+  // "zurücksetzen" in der Kategorien-Ansicht: alle Kategorie- UND
+  // Untertyp-Filter der aktuellen Quelle aufheben.
+  document.getElementById("cats-all")?.addEventListener("click", () => {
+    const src = SOURCES.find((s) => s.id === currentSource);
+    if (!src) return;
+    hiddenSources.delete(src.id);
+    for (const cat of src.categories) {
+      hiddenCategories.delete(cat);
+      resetSubtypeKeys(cat);
+    }
+    refresh();
+  });
   document.getElementById("detail-all")?.addEventListener("click", () => {
     if (detailCat) resetSubtypes(detailCat);
   });
 }
 
-// Alle Untertyp-Filter einer Kategorie zurücksetzen (inkl. Isolation/Rest).
-function resetSubtypes(cat: string): void {
+// Alle Untertyp-Schlüssel einer Kategorie löschen (ohne Neuzeichnen).
+function resetSubtypeKeys(cat: string): void {
   for (const key of [...hiddenSubtypes]) {
     if (key.startsWith(`${cat}::`)) hiddenSubtypes.delete(key);
   }
+}
+
+// Alle Untertyp-Filter einer Kategorie zurücksetzen (inkl. Isolation/Rest).
+function resetSubtypes(cat: string): void {
+  resetSubtypeKeys(cat);
   for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
     r.classList.remove("off");
   }
