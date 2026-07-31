@@ -22,6 +22,22 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
   nach Aufwand/Wert; GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
   BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
 
+## [0.13.0] — 2026-07-31
+
+**Quellen-zentrierte Legende.**
+
+### Geändert
+- Die Legende beginnt jetzt bei der Datenquelle: eine Kachel pro Quelle
+  mit Name, Herkunft, Stand-Datum und Objektzahl („hier ist Quelle 1,
+  klick drauf") → Kategorien der Quelle → kuratierte Untertypen, mit
+  Zurück-Kette über alle drei Ebenen in derselben Card
+- Quelle-Kachel schaltet die ganze Quelle um (Einzel-Auswahl der
+  Kategorien bleibt dabei erhalten); Klick auf eine Kategorie bei
+  ausgeschalteter Quelle isoliert sie (gleiche Geste wie bei Untertypen);
+  „zurücksetzen" im Kategorien-Kopf hebt alle Filter der Quelle auf
+- Vorbereitet für Stufe B: neue Quellen (PEGELONLINE, BNetzA-Register,
+  MaStR …) werden eigene Einträge neben OpenStreetMap
+
 ## [0.12.0] — 2026-07-31
 
 **Stufe A: vier neue Ebenen aus dem Bayern-PBF.**
