@@ -1,3 +1,3 @@
 """AUTO-GENERIERT durch scripts/bump-version.mjs — nicht von Hand editieren."""
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"

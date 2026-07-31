@@ -22,6 +22,23 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
   große Brocken); GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
   BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
 
+## [0.15.0] — 2026-07-31
+
+**Karten-Dramaturgie: die Infrastruktur leuchtet.**
+
+### Geändert
+- Neuer Glow-Layer unter den Objekt-Punkten: bei Übersichts-Zoom
+  verschmelzen die Objekte zu farbigen Lichtfeldern, nah dran wird der
+  Glow zum Halo um klickbare Punkte (Light-Theme: gedimmt)
+- Punkt-Staffelung neu abgestimmt (Kerne wachsen von 1,1 px auf 5,5 px,
+  Kontur erst ab z9); Parameter an synthetischer Bayern-Punktwolke
+  visuell verifiziert
+- Änderungs-Highlights pulsieren, solange die Änderungsansicht offen ist
+  (statisch bei `prefers-reduced-motion`)
+- Basemap mit mehr Tiefe: Flächen dunkler, Wasser leuchtender,
+  Straßenhierarchie gespreizt (Generator, beide Themes) — Live-Sichtung
+  der echten Basemap steht aus
+
 ## [0.14.0] — 2026-07-31
 
 **Stufe B, Quelle 2: PEGELONLINE — die Kette kann jetzt mehrere Quellen.**
