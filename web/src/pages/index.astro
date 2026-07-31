@@ -64,6 +64,58 @@ const VERSION = pkg.version;
       <md-filled-button id="toast-apply">aktualisieren</md-filled-button>
     </div>
 
+    <!-- Zoom + Info als gemeinsame M3-Control-Säule (ersetzt MapLibre-Defaults) -->
+    <div class="map-controls">
+      <md-icon-button id="zoom-in" aria-label="Hineinzoomen">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+      </md-icon-button>
+      <md-icon-button id="zoom-out" aria-label="Herauszoomen">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
+      </md-icon-button>
+      <md-icon-button id="info-open" aria-label="Info und Lizenzen">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16"/></svg>
+      </md-icon-button>
+    </div>
+    <span class="map-attrib">© OpenStreetMap-Mitwirkende</span>
+
+    <!-- Zentraler Info-Dialog: Version, Datenstand, Quellen, Lizenzen, Rechtliches -->
+    <md-dialog id="info-dialog">
+      <div slot="headline">atmr<span class="dlg-os">OS</span></div>
+      <div slot="content" class="info-content">
+        <p class="info-tagline">
+          Die Infrastruktur Bayerns als eine Ebene — mit Gedächtnis, und jede
+          Anzeige trägt ihre Quelle.
+        </p>
+        <div class="info-grid">
+          <span class="k">Version</span><span>v{VERSION}</span>
+          <span class="k">Datenstand</span><span id="info-stand">–</span>
+          <span class="k">Betreiber</span><span><a href="https://www.multaenhavo.com" target="_blank" rel="noopener">MultaEnhavo</a></span>
+        </div>
+        <h5>Datenquellen</h5>
+        <p>
+          Geodaten © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap-Mitwirkende</a>
+          (ODbL), bezogen über <a href="https://download.geofabrik.de/" target="_blank" rel="noopener">Geofabrik</a>.
+          Basemap: <a href="https://protomaps.com/" target="_blank" rel="noopener">Protomaps</a>, selbst gehostet.
+        </p>
+        <h5>Software</h5>
+        <p>
+          <a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a> (BSD-3-Clause) ·
+          <a href="https://github.com/material-components/material-web" target="_blank" rel="noopener">Material 3 / @material/web</a> (Apache-2.0) ·
+          Roboto (Apache-2.0) · PMTiles (BSD-3-Clause) ·
+          <a href="https://astro.build/" target="_blank" rel="noopener">Astro</a> (MIT) ·
+          <a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI</a> (MIT) · PostGIS
+        </p>
+        <h5>Rechtliches</h5>
+        <p>
+          <a href="https://www.multaenhavo.com/impressum" target="_blank" rel="noopener">Impressum</a> ·
+          <a href="https://www.multaenhavo.com/datenschutz" target="_blank" rel="noopener">Datenschutz</a>
+        </p>
+      </div>
+      <div slot="actions">
+        <md-text-button id="info-close">Schließen</md-text-button>
+      </div>
+    </md-dialog>
+
     <script>
       import "../lib/md";
       import { initMap } from "../lib/map";

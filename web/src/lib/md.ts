@@ -14,5 +14,6 @@ import "@material/web/chips/chip-set.js";
 import "@material/web/chips/filter-chip.js";
 import "@material/web/chips/assist-chip.js";
 import "@material/web/textfield/filled-text-field.js";
+import "@material/web/dialog/dialog.js";
 import "@material/web/progress/linear-progress.js";
 import "@material/web/progress/circular-progress.js";

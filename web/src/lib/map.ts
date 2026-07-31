@@ -153,13 +153,15 @@ export async function initMap(): Promise<void> {
     style: await loadBasemapStyle(),
     center: START_CENTER,
     zoom: START_ZOOM,
-    attributionControl: { compact: true },
+    // Eigene M3-Controls (Zoom+Info-Säule); ODbL-Hinweis als eigene Mini-Zeile
+    // + Volltext im Info-Dialog.
+    attributionControl: false,
     // Cookie an die (ggf. cross-origin, aber same-site) API mitschicken, damit
     // die Vektor-Tiles hinter dem Gate geladen werden können.
     transformRequest: (url) =>
       url.startsWith(API_BASE) ? { url, credentials: "include" } : { url },
   });
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  wireMapControls();
 
   map.on("load", async () => {
     // Stand zuerst holen -> Tile-URL bekommt ?v=<Stand>, Legende wird gefüllt.
@@ -168,6 +170,7 @@ export async function initMap(): Promise<void> {
       latestStats = stats;
       dataVersion = stats.latest_observed_at ?? "";
       buildLegend(stats);
+      setInfoStand(stats.latest_observed_at);
     }
 
     map.addSource(SRC, {
@@ -246,6 +249,22 @@ export async function initMap(): Promise<void> {
   document.getElementById("changes-close")?.addEventListener("click", () => setChanges(false));
 
   wireLegend();
+}
+
+// --- Zoom+Info-Controls + Info-Dialog ---------------------------------------
+type MdDialog = HTMLElement & { show: () => void; close: () => void };
+
+function wireMapControls(): void {
+  document.getElementById("zoom-in")?.addEventListener("click", () => map.zoomIn());
+  document.getElementById("zoom-out")?.addEventListener("click", () => map.zoomOut());
+  const dialog = document.getElementById("info-dialog") as MdDialog | null;
+  document.getElementById("info-open")?.addEventListener("click", () => dialog?.show());
+  document.getElementById("info-close")?.addEventListener("click", () => dialog?.close());
+}
+
+function setInfoStand(iso: string | null): void {
+  const el = document.getElementById("info-stand");
+  if (el && iso) el.textContent = formatDate(iso);
 }
 
 // --- Änderungsansicht -------------------------------------------------------
@@ -379,6 +398,7 @@ function applyNewVersion(): void {
   const src = map.getSource(SRC) as maplibregl.VectorTileSource | undefined;
   src?.setTiles([tileUrl(dataVersion)]); // frische Tiles, kein Reload
   buildLegend(latestStats);              // Legenden-Zahlen aktualisieren
+  setInfoStand(latestStats.latest_observed_at);
   hideToast();
 }
 
