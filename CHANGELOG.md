@@ -17,6 +17,36 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.11.0] — 2026-07-31
+
+**Kuratierte Untertypen statt 1:1-Rohwerte.**
+
+### Geändert
+- Untertypen werden im Ingest auf eine kuratierte Taxonomie normalisiert
+  (`SUBTYPE_MAP`): Schreibvarianten gemergt (`watch_tower`/`watchtower` →
+  Wehr- & Wachtürme, `telecommunication`/`radio`/`radar` → Funk &
+  Telekommunikation, `transformer_tower`/`kiosk` → Ortsnetzstationen);
+  Tagging-Müll („yes", Tippfehler, Freitext) und Nicht-Infrastruktur
+  (Sprung-/Kletterturm) fallen bewusst raus. Die Roh-Tags bleiben
+  unverändert in `attrs` und im Rohlager — kuratiert wird nur, was Filter
+  und Zähler sehen
+- Klassifikations-Priorität gedreht: Funktion vor Bauform —
+  `power=substation`/`power=tower` gewinnen jetzt gegen
+  `man_made=mast`/`tower` (eine Turmstation ist eine Stromstation, kein
+  Turm); greift für Bestandsobjekte automatisch beim nächsten Ingest
+- Drilldown-Labels neu formuliert (z.B. „Kraftwerkseinspeisung",
+  „Flutlicht & Beleuchtung", „Glockentürme")
+
+### Entfernt
+- „(ohne Angabe)"-Pseudo-Zeile und Sammelzeile „andere" im Drilldown;
+  `/stats` liefert nur noch benannte kuratierte Untertypen. Objekte ohne
+  kuratierten Untertyp zählen weiter in der Kachel-Summe und folgen dem
+  Kategorie-Schalter
+
+### Hinzugefügt
+- „zurücksetzen"-Button im Drilldown-Kopf: hebt alle Untertyp-Filter der
+  offenen Kategorie auf (auch nach „nur dieser Untertyp"-Isolation)
+
 ## [0.10.1] — 2026-07-31
 
 **Filter modernisiert: Kachel-Grid + Drilldown.**
