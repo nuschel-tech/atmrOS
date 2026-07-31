@@ -187,12 +187,14 @@ def run(pbf_arg: str | None, dry_run: bool, if_modified: bool = False) -> dict:
 
 
 def _subtype_summary(records: list[dict], category: str) -> dict[str, int]:
-    """Zählt Untertypen einer Kategorie (None -> '(ohne Angabe)'), absteigend."""
+    """Zählt kuratierte Untertypen einer Kategorie, absteigend. None (kein
+    kuratierter Wert) taucht im Log als eigener Posten auf — nur zur Kontrolle,
+    UI und /stats zeigen ihn nicht."""
     counts: dict[str, int] = {}
     for r in records:
         if r["category"] != category:
             continue
-        key = r.get("subtype") or "(ohne Angabe)"
+        key = r.get("subtype") or "(nicht kuratiert)"
         counts[key] = counts.get(key, 0) + 1
     return dict(sorted(counts.items(), key=lambda kv: kv[1], reverse=True))
 

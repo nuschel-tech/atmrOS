@@ -31,12 +31,14 @@ LICENSE = "ODbL — © OpenStreetMap-Mitwirkende"
 # --- Filter: (OSM-Key, OSM-Value) -> atmrOS-Kategorie ------------------------
 # Reihenfolge = Priorität; erste Übereinstimmung gewinnt. So bleibt die
 # Klassifikation deterministisch, auch wenn ein Objekt mehrere Tags trägt.
+# Funktion schlägt Bauform: power=* vor man_made=mast/tower, damit z.B. eine
+# Turmstation (man_made=tower + power=substation) als Stromstation zählt.
 CATEGORY_RULES: list[tuple[tuple[str, str], str]] = [
     (("man_made", "surveillance"),      "surveillance"),      # Überwachungskameras
+    (("power",    "substation"),        "substation"),        # Umspannwerke
+    (("power",    "tower"),             "power_tower"),       # Strommasten
     (("man_made", "mast"),              "mast"),              # Sendemasten
     (("man_made", "tower"),             "tower"),             # Türme
-    (("power",    "substation"),        "substation"),        # Umspannwerke
-    (("power",    "tower"),             "power_tower"),        # Strommasten
     (("amenity",  "charging_station"),  "charging_station"),  # Ladesäulen
     (("amenity",  "fuel"),              "fuel"),              # Tankstellen
 ]
@@ -65,6 +67,64 @@ def classify(tags) -> str | None:
         if tags.get(key) == value:
             return category
     return None
+
+
+# --- Untertypen: kuratierte Taxonomie statt 1:1-Rohwerte ---------------------
+# OSM-Untertyp-Tags sind Wildwuchs: Schreibvarianten (watchtower/watch_tower),
+# Nicht-Werte ("yes"), Tippfehler und Nicht-Infrastruktur (Sprung-/Kletterturm).
+# Deshalb: Roh-Wert -> kanonischer atmrOS-Untertyp, alles Unbekannte -> None.
+# Kuratiert wird NUR die subtype-Spalte (Filter/Zähler); die Roh-Tags bleiben
+# vollständig in attrs und im Rohlager (Grundregeln 2+3 — die Quelle lügt nicht).
+SUBTYPE_MAP: dict[str, dict[str, str]] = {
+    # power=substation -> substation=*
+    "substation": {
+        "minor_distribution": "minor_distribution",
+        "transformer":        "minor_distribution",  # gleiche Funktion,
+        "transformer_tower":  "minor_distribution",  # andere Bauform
+        "kiosk":              "minor_distribution",
+        "distribution":       "distribution",
+        "transmission":       "transmission",
+        "generation":         "generation",
+        "industrial":         "industrial",
+        "traction":           "traction",
+        "converter":          "converter",
+    },
+    # man_made=tower -> tower:type=*
+    "tower": {
+        "bell_tower":         "bell_tower",
+        "campanile":          "bell_tower",
+        "communication":      "communication",
+        "telecommunication":  "communication",
+        "radio":              "communication",
+        "radar":              "communication",
+        "antenna":            "communication",
+        "defensive":          "defensive",
+        "watchtower":         "defensive",
+        "watch_tower":        "defensive",
+        "observation":        "observation",
+        "lighting":           "lighting",
+        "cooling":            "cooling",
+        "water":              "water",
+    },
+    # man_made=mast -> tower:type=*
+    "mast": {
+        "communication":      "communication",
+        "telecommunication":  "communication",
+        "radio":              "communication",
+        "antenna":            "communication",
+        "lighting":           "lighting",
+        "siren":              "siren",
+        "monitoring":         "monitoring",
+    },
+}
+
+
+def normalize_subtype(category: str, raw: str | None) -> str | None:
+    """Roh-Untertyp -> kanonischer Untertyp oder None. Case-insensitiv und
+    getrimmt, damit Groß-/Leerzeichen-Varianten nicht zählerspaltend wirken."""
+    if not raw:
+        return None
+    return SUBTYPE_MAP.get(category, {}).get(raw.strip().lower())
 
 
 # --- Datenbank ---------------------------------------------------------------

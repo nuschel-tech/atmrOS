@@ -13,7 +13,7 @@ from typing import Callable
 
 import osmium
 
-from .config import classify
+from .config import classify, normalize_subtype
 
 # Ein Record ist ein einfaches Dict — bewusst kein ORM-Objekt, damit die
 # Parse-Stufe DB-frei und für sich testbar bleibt.
@@ -26,13 +26,13 @@ def _tags_to_dict(tags: osmium.osm.TagList) -> dict[str, str]:
 
 
 def _subtype(category: str, tags: osmium.osm.TagList) -> str | None:
-    """Feinere Klassifikation aus den Tags — nur für die zu groben Kategorien.
-    substation umfasst überwiegend kleine Ortsnetzstationen; tower/mast fangen
-    Kirch-/Wasser-/Aussichtstürme mit ein. tags.get() existiert in osmium 4.x."""
+    """Kuratierter Untertyp — nur für die zu groben Kategorien. Der Roh-Wert
+    läuft durch config.normalize_subtype (kanonische Taxonomie); Unbekanntes
+    wird None, bleibt aber als Roh-Tag in attrs. tags.get() existiert in 4.x."""
     if category == "substation":
-        return tags.get("substation")
+        return normalize_subtype(category, tags.get("substation"))
     if category in ("tower", "mast"):
-        return tags.get("tower:type")
+        return normalize_subtype(category, tags.get("tower:type"))
     return None
 
 

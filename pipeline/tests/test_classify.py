@@ -18,13 +18,12 @@ import tempfile
 import osmium
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from atmros.config import classify  # noqa: E402
+from atmros.config import classify, normalize_subtype  # noqa: E402
 
 # Jeder Node trägt ein realistisches Tag-Set; erwartetes classify()-Ergebnis
-# steht in der description. Der Priority-Fall (id 90) hat man_made=tower UND
-# power=substation — nach Regel-Reihenfolge gewinnt substation NICHT, sondern
-# man_made... nein: siehe CATEGORY_RULES-Reihenfolge -> substation kommt vor
-# power_tower, aber man_made=tower kommt noch davor. Erwartung: "tower".
+# steht daneben. Priority-Fälle: Funktion schlägt Bauform — eine Turmstation
+# (id 90: man_made=tower + power=substation) ist eine Stromstation, ein
+# Tragmast einer Freileitung (id 91) ein Strommast.
 _NODES = [
     (10, {"man_made": "mast", "operator": "Telekom"}, "mast"),
     (11, {"man_made": "tower", "tower:type": "communication"}, "tower"),
@@ -36,7 +35,8 @@ _NODES = [
     (80, {"highway": "bus_stop"}, None),
     (81, {"building": "church"}, None),
     (82, {}, None),
-    (90, {"man_made": "tower", "power": "substation"}, "tower"),  # Priorität
+    (90, {"man_made": "tower", "power": "substation"}, "substation"),  # Turmstation
+    (91, {"man_made": "tower", "power": "tower"}, "power_tower"),      # Tragmast
 ]
 
 
@@ -111,7 +111,35 @@ def test_taglist_has_no_keys_method() -> None:
     assert seen.get("has_keys") is False, "TagList unerwartet mit keys() — Test anpassen"
 
 
+def test_normalize_subtype() -> None:
+    """Kuratierte Taxonomie: Varianten mergen, Müll wird None (fliegt aus den
+    Zählern, bleibt aber als Roh-Tag in attrs)."""
+    cases = [
+        # (category, raw, expected)
+        ("substation", "minor_distribution", "minor_distribution"),
+        ("substation", "transformer_tower", "minor_distribution"),  # Bauform-Merge
+        ("substation", "kiosk", "minor_distribution"),
+        ("substation", "yes", None),                    # Tagging-Müll
+        ("substation", "erzeugungq", None),             # Tippfehler/Freitext
+        ("tower", "watch_tower", "defensive"),          # Schreibvariante
+        ("tower", "watchtower", "defensive"),
+        ("tower", "telecommunication", "communication"),
+        ("tower", " Communication ", "communication"),  # Case/Whitespace
+        ("tower", "diving", None),                      # Freizeit, keine Infrastruktur
+        ("tower", "Historischer Zollturm", None),       # Freitext
+        ("mast", "radio", "communication"),
+        ("mast", "lighting", "lighting"),
+        ("mast", None, None),
+        ("power_tower", "communication", None),         # Kategorie ohne Untertypen
+    ]
+    for category, raw, expected in cases:
+        got = normalize_subtype(category, raw)
+        assert got == expected, f"{category}/{raw!r}: got {got!r}, expected {expected!r}"
+
+
 if __name__ == "__main__":
     test_classify_with_real_taglist()
     test_taglist_has_no_keys_method()
-    print("OK — classify() gegen echtes TagList grün (11 Fälle + keys()-Wächter)")
+    test_normalize_subtype()
+    print("OK — classify() gegen echtes TagList grün (12 Fälle + keys()-Wächter"
+          " + Untertyp-Normalisierung)")
