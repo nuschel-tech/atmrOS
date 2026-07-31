@@ -189,7 +189,7 @@ def stats() -> dict:
             """
             SELECT category, subtype, count(*) AS n
             FROM object
-            WHERE present AND category = ANY(:cats)
+            WHERE present AND category = ANY(:cats) AND subtype IS NOT NULL
             GROUP BY category, subtype
             ORDER BY n DESC
             """
@@ -198,11 +198,12 @@ def stats() -> dict:
             "SELECT max(observed_at) AS m FROM observation"
         )).first()
 
+    # Nur benannte, kuratierte Untertypen (Ingest normalisiert; NULL = kein
+    # kuratierter Wert und wird bewusst nicht als Pseudo-Zeile ausgewiesen —
+    # die Kachel-Summe by_category bleibt die ehrliche Gesamtzahl).
     by_subtype: dict[str, dict[str, int]] = {}
     for r in by_sub:
-        # NULL -> "(ohne Angabe)": ehrlich sichtbar, nicht verschluckt.
-        key = r.subtype if r.subtype is not None else "(ohne Angabe)"
-        by_subtype.setdefault(r.category, {})[key] = r.n
+        by_subtype.setdefault(r.category, {})[r.subtype] = r.n
 
     return {
         "total": sum(r.n for r in by_cat),
