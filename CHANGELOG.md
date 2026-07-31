@@ -17,6 +17,20 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.10.1] — 2026-07-31
+
+**Filter modernisiert: Kachel-Grid + Drilldown.**
+
+### Geändert
+- Kategorien-Filter als gleich breite Kacheln im 2-Spalten-Grid
+  (Quick-Settings-Muster) statt unterschiedlich breiter Chips
+- Untertypen als Drilldown IN der Card (Pfeil → Detailansicht mit
+  Zurück-Button) statt schwebendem Popover nach oben
+- Labels kurz und klar: alles Plural, „Überwachungskamera" → „Kameras"
+- App stirbt nicht mehr ohne WebGL: Legende, Zähler, Änderungsliste und
+  Info-Dialog funktionieren auch, wenn die Karte nicht initialisiert
+  werden kann (alte Geräte)
+
 ## [0.10.0] — 2026-07-31
 
 **Der Rahmen der App: Boot, App Bar, Chips, Controls.**

@@ -26,14 +26,16 @@ export interface Category {
   color: string;
 }
 
+// Labels: kurz, Plural, karten-tauglich (gleich breite Kacheln). Die Schärfe
+// ("Kirchturm ist kein Sendemast") liefert die Untertypen-Ansicht.
 export const CATEGORIES: Category[] = [
-  { id: "mast",             label: "Sendemast",         color: "#4b9fd4" },
-  { id: "tower",            label: "Turm",              color: "#e5a44e" },
-  { id: "power_tower",      label: "Strommast",         color: "#8a8f98" },
-  { id: "substation",       label: "Umspannwerk",       color: "#b3c94f" },
-  { id: "charging_station", label: "Ladesäule",         color: "#3fb27f" },
-  { id: "surveillance",     label: "Überwachungskamera", color: "#c56b7e" },
-  { id: "fuel",             label: "Tankstelle",        color: "#9a7bd0" },
+  { id: "mast",             label: "Sendemasten",  color: "#4b9fd4" },
+  { id: "tower",            label: "Türme",        color: "#e5a44e" },
+  { id: "power_tower",      label: "Strommasten",  color: "#8a8f98" },
+  { id: "substation",       label: "Umspannwerke", color: "#b3c94f" },
+  { id: "charging_station", label: "Ladesäulen",   color: "#3fb27f" },
+  { id: "surveillance",     label: "Kameras",      color: "#c56b7e" },
+  { id: "fuel",             label: "Tankstellen",  color: "#9a7bd0" },
 ];
 
 // Auswahl-/Signalfarbe aus der Dynamic-Color-Engine (primary, dark).

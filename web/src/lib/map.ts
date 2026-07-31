@@ -160,19 +160,35 @@ export async function initMap(): Promise<void> {
   window.matchMedia?.("(prefers-color-scheme: light)")
     .addEventListener?.("change", () => window.location.reload());
 
-  map = new maplibregl.Map({
-    container: "map",
-    style: await loadBasemapStyle(),
-    center: START_CENTER,
-    zoom: START_ZOOM,
-    // Eigene M3-Controls (Zoom+Info-Säule); ODbL-Hinweis als eigene Mini-Zeile
-    // + Volltext im Info-Dialog.
-    attributionControl: false,
-    // Cookie an die (ggf. cross-origin, aber same-site) API mitschicken, damit
-    // die Vektor-Tiles hinter dem Gate geladen werden können.
-    transformRequest: (url) =>
-      url.startsWith(API_BASE) ? { url, credentials: "include" } : { url },
-  });
+  try {
+    map = new maplibregl.Map({
+      container: "map",
+      style: await loadBasemapStyle(),
+      center: START_CENTER,
+      zoom: START_ZOOM,
+      // Eigene M3-Controls (Zoom+Info-Säule); ODbL-Hinweis als eigene Mini-Zeile
+      // + Volltext im Info-Dialog.
+      attributionControl: false,
+      // Cookie an die (ggf. cross-origin, aber same-site) API mitschicken, damit
+      // die Vektor-Tiles hinter dem Gate geladen werden können.
+      transformRequest: (url) =>
+        url.startsWith(API_BASE) ? { url, credentials: "include" } : { url },
+    });
+  } catch (e) {
+    // Kein WebGL (alte Geräte/Headless): App nicht sterben lassen — Legende,
+    // Stats, Änderungsliste und Info-Dialog funktionieren auch ohne Karte.
+    console.warn("atmrOS: Karte nicht verfügbar (WebGL?)", e);
+    wireMapControls();
+    const stats = await fetchStats();
+    if (stats) {
+      latestStats = stats;
+      buildLegend(stats);
+      setInfoStand(stats.latest_observed_at);
+    }
+    startVersionPolling();
+    dismissBoot();
+    return;
+  }
   wireMapControls();
 
   map.on("load", async () => {
@@ -268,8 +284,8 @@ export async function initMap(): Promise<void> {
 type MdDialog = HTMLElement & { show: () => void; close: () => void };
 
 function wireMapControls(): void {
-  document.getElementById("zoom-in")?.addEventListener("click", () => map.zoomIn());
-  document.getElementById("zoom-out")?.addEventListener("click", () => map.zoomOut());
+  document.getElementById("zoom-in")?.addEventListener("click", () => map?.zoomIn());
+  document.getElementById("zoom-out")?.addEventListener("click", () => map?.zoomOut());
   const dialog = document.getElementById("info-dialog") as MdDialog | null;
   document.getElementById("info-open")?.addEventListener("click", () => dialog?.show());
   document.getElementById("info-close")?.addEventListener("click", () => dialog?.close());
@@ -295,7 +311,7 @@ function setChanges(on: boolean): void {
   changesOn = on;
   document.getElementById("changes")?.toggleAttribute("hidden", !on);
   document.getElementById("changes-toggle")?.setAttribute("aria-pressed", String(on));
-  if (map.getLayer(CHG_LAYER)) {
+  if (map?.getLayer(CHG_LAYER)) {
     map.setLayoutProperty(CHG_LAYER, "visibility", on ? "visible" : "none");
   }
   if (on) void loadChanges();
@@ -315,7 +331,7 @@ async function loadChanges(): Promise<void> {
   }
 
   // Karten-Highlight aus den Änderungen.
-  const src = map.getSource(CHG_SRC) as maplibregl.GeoJSONSource | undefined;
+  const src = map?.getSource(CHG_SRC) as maplibregl.GeoJSONSource | undefined;
   src?.setData({
     type: "FeatureCollection",
     features: data.changes.map((c) => ({
@@ -361,7 +377,7 @@ function renderChangesList(changes: ChangeItem[]): void {
     row.addEventListener("click", () => {
       const c = changes[Number(row.dataset.i)];
       if (!c) return;
-      map.flyTo({ center: [c.lon, c.lat], zoom: Math.max(map.getZoom(), 13) });
+      map?.flyTo({ center: [c.lon, c.lat], zoom: Math.max(map.getZoom(), 13) });
       selected = { type: c.osm_type, id: c.osm_id };
       applyFilters();
       void openPanel(c.osm_type, c.osm_id);
@@ -408,7 +424,7 @@ function setUpdating(on: boolean): void {
 function applyNewVersion(): void {
   if (!latestStats) return;
   dataVersion = latestStats.latest_observed_at ?? dataVersion;
-  const src = map.getSource(SRC) as maplibregl.VectorTileSource | undefined;
+  const src = map?.getSource(SRC) as maplibregl.VectorTileSource | undefined;
   src?.setTiles([tileUrl(dataVersion)]); // frische Tiles, kein Reload
   buildLegend(latestStats);              // Legenden-Zahlen aktualisieren
   setInfoStand(latestStats.latest_observed_at);
@@ -436,6 +452,7 @@ function baseFilter(): maplibregl.FilterSpecification {
 }
 
 function applyFilters(): void {
+  if (!map) return; // degradierter Modus ohne Karte
   const base = baseFilter();
   map.setFilter(LAYER, base);
   if (selected) {
@@ -461,53 +478,55 @@ async function fetchStats(): Promise<StatsResponse | null> {
   }
 }
 
-// Kategorien als M3-Filter-Chips; Untertypen (Ehrlichkeits-Feature) öffnen
-// über den Expand-Punkt am Chip ein Popover über dem Chip-Feld.
-let activePopCat: string | null = null;
+// Kategorien als gleich breite Kacheln (2-Spalten-Grid, Quick-Settings-Muster).
+// Untertypen (Ehrlichkeits-Feature) als Drilldown IN derselben Card: Pfeil ->
+// Detailansicht mit Zurück-Button, kein schwebendes Popover.
+let detailCat: string | null = null;
 
 const de = (n: number): string => n.toLocaleString("de-DE");
 
 function buildLegend(stats: StatsResponse): void {
-  const host = document.getElementById("legend-body");
+  const host = document.getElementById("legend-grid");
   if (!host) return;
-  const chips: string[] = [];
+  const tiles: string[] = [];
 
   for (const c of CATEGORIES) {
     const total = stats.by_category[c.id] ?? 0;
     const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
     const hasSubs = !!subs && Object.keys(subs).length > 0;
     const off = hiddenCategories.has(c.id);
-    const delay = CATEGORIES.indexOf(c) * 40;
+    const delay = CATEGORIES.indexOf(c) * 35;
 
     const expand = hasSubs
-      ? `<span class="chip-expand" role="button" tabindex="0" data-expand="${c.id}" ` +
+      ? `<span class="tile-expand" role="button" tabindex="0" data-expand="${c.id}" ` +
         `aria-label="Untertypen von ${c.label}">` +
-        `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">` +
-        `<path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg></span>`
+        `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">` +
+        `<path d="M9.3 6.7a1 1 0 0 1 1.4-1.4l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4-1.4L14.6 12z"/></svg></span>`
       : "";
 
-    chips.push(
-      `<div class="cat-chip${off ? " off" : ""} m3e-pop" style="--m3e-delay:${delay}ms" ` +
+    tiles.push(
+      `<div class="cat-tile${off ? " off" : ""} m3e-pop" style="--m3e-delay:${delay}ms" ` +
       `role="button" tabindex="0" aria-pressed="${!off}" data-cat="${c.id}">` +
       `<span class="dot" style="background:${c.color}"></span>` +
-      `<span class="lbl">${c.label}</span>` +
-      `<span class="count">${de(total)}</span>${expand}</div>`,
+      `<span class="txt"><span class="lbl">${c.label}</span>` +
+      `<span class="count">${de(total)}</span></span>${expand}</div>`,
     );
   }
-  host.innerHTML = chips.join("");
-  // Offenes Popover mit frischen Zahlen neu aufbauen (z.B. nach Daten-Update).
-  if (activePopCat) renderSubsPopover(activePopCat);
+  host.innerHTML = tiles.join("");
+  // Offene Detailansicht mit frischen Zahlen neu aufbauen (Daten-Update).
+  if (detailCat) renderDetail(detailCat);
 }
 
-// --- Untertypen-Popover ------------------------------------------------------
-function renderSubsPopover(catId: string): void {
-  const pop = document.getElementById("subs-pop");
+// --- Untertypen-Drilldown (in der Card) --------------------------------------
+function renderDetail(catId: string): void {
+  const grid = document.getElementById("legend-grid");
+  const detail = document.getElementById("legend-detail");
   const list = document.getElementById("subs-list");
-  const title = document.getElementById("subs-title");
-  const dot = document.getElementById("subs-dot");
+  const title = document.getElementById("detail-title");
+  const dot = document.getElementById("detail-dot");
   const subs = latestStats?.by_subtype?.[catId];
   const cat = CATEGORY_BY_ID[catId];
-  if (!pop || !list || !title || !dot || !subs || !cat) return;
+  if (!grid || !detail || !list || !title || !dot || !subs || !cat) return;
 
   title.textContent = cat.label;
   (dot as HTMLElement).style.background = cat.color;
@@ -539,44 +558,40 @@ function renderSubsPopover(catId: string): void {
     );
   }
   list.innerHTML = rows.join("");
-  pop.classList.toggle("cat-off", hiddenCategories.has(catId));
-  pop.removeAttribute("hidden");
-  activePopCat = catId;
+  detail.classList.toggle("cat-off", hiddenCategories.has(catId));
+  grid.setAttribute("hidden", "");
+  detail.removeAttribute("hidden");
+  detailCat = catId;
 }
 
-function closeSubsPopover(): void {
-  document.getElementById("subs-pop")?.setAttribute("hidden", "");
-  activePopCat = null;
+function showGrid(): void {
+  document.getElementById("legend-detail")?.setAttribute("hidden", "");
+  document.getElementById("legend-grid")?.removeAttribute("hidden");
+  detailCat = null;
 }
 
-function chipOf(catId: string): HTMLElement | null {
-  return document.querySelector<HTMLElement>(`.cat-chip[data-cat="${catId}"]`);
+function tileOf(catId: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`.cat-tile[data-cat="${catId}"]`);
 }
 
 function wireLegend(): void {
-  const host = document.getElementById("legend-body");
+  const host = document.getElementById("legend-grid");
   const list = document.getElementById("subs-list");
   if (!host || !list) return;
 
-  const onChipArea = (target: HTMLElement): void => {
-    // 1) Expand-Punkt: Popover auf/zu — Kategorie NICHT umschalten.
+  const onTileArea = (target: HTMLElement): void => {
+    // 1) Pfeil: Drilldown öffnen — Kategorie NICHT umschalten.
     const expand = target.closest<HTMLElement>("[data-expand]");
     if (expand) {
-      const cat = expand.dataset.expand!;
-      if (activePopCat === cat) closeSubsPopover();
-      else renderSubsPopover(cat);
+      renderDetail(expand.dataset.expand!);
       return;
     }
-    // 2) Chip: Kategorie umschalten (Popover-Zustand spiegeln).
-    const chip = target.closest<HTMLElement>(".cat-chip");
-    if (chip) {
-      const cat = chip.dataset.cat!;
-      toggle(hiddenCategories, cat, chip);
-      const off = hiddenCategories.has(cat);
-      chip.setAttribute("aria-pressed", String(!off));
-      if (activePopCat === cat) {
-        document.getElementById("subs-pop")?.classList.toggle("cat-off", off);
-      }
+    // 2) Kachel: Kategorie umschalten.
+    const tile = target.closest<HTMLElement>(".cat-tile");
+    if (tile) {
+      const cat = tile.dataset.cat!;
+      toggle(hiddenCategories, cat, tile);
+      tile.setAttribute("aria-pressed", String(!hiddenCategories.has(cat)));
       applyFilters();
     }
   };
@@ -589,10 +604,10 @@ function wireLegend(): void {
       // Kategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder an,
       // NUR die geklickte Zeile sichtbar, alle anderen aus.
       hiddenCategories.delete(cat);
-      const chip = chipOf(cat);
-      chip?.classList.remove("off");
-      chip?.setAttribute("aria-pressed", "true");
-      document.getElementById("subs-pop")?.classList.remove("cat-off");
+      const tile = tileOf(cat);
+      tile?.classList.remove("off");
+      tile?.setAttribute("aria-pressed", "true");
+      document.getElementById("legend-detail")?.classList.remove("cat-off");
       for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
         const isClicked = r === row;
         for (const key of subKeysOf(r, cat)) {
@@ -623,11 +638,11 @@ function wireLegend(): void {
       handler(e.target as HTMLElement);
     }
   };
-  host.addEventListener("click", (e) => onChipArea(e.target as HTMLElement));
-  host.addEventListener("keydown", keyable(onChipArea));
+  host.addEventListener("click", (e) => onTileArea(e.target as HTMLElement));
+  host.addEventListener("keydown", keyable(onTileArea));
   list.addEventListener("click", (e) => onSubRow(e.target as HTMLElement));
   list.addEventListener("keydown", keyable(onSubRow));
-  document.getElementById("subs-close")?.addEventListener("click", closeSubsPopover);
+  document.getElementById("detail-back")?.addEventListener("click", showGrid);
 }
 
 // Komposit-Schlüssel einer Untertyp-Zeile (Einzeltyp oder Sammelzeile "andere").

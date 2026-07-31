@@ -188,64 +188,67 @@ html, body {
   max-width: min(400px, calc(100vw - 28px));
   animation: m3e-pop var(--md-duration-long) var(--md-motion-spring) 80ms both;
 }
-.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.lg-hint { color: var(--md-sys-color-on-surface-variant); font: var(--md-type-label-small); }
+/* Kachel-Grid: 2 Spalten, alle gleich breit (Quick-Settings-Muster). */
+.cat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+  width: min(336px, calc(100vw - 52px));
+}
+.cat-grid[hidden] { display: none; }
+.lg-hint { grid-column: 1 / -1; color: var(--md-sys-color-on-surface-variant); font: var(--md-type-label-small); }
 
-/* M3 Filter-Chip: an = tonal gefüllt, aus = Outline + durchgestrichen. */
-.cat-chip {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 10px 7px 12px; border-radius: var(--md-shape-s);
+/* Kategorie-Kachel: an = tonal gefüllt, aus = Outline + durchgestrichen. */
+.cat-tile {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 8px 9px 11px; border-radius: var(--md-shape-m);
   background: var(--md-sys-color-secondary-container);
   color: var(--md-sys-color-on-secondary-container);
   border: 1px solid transparent;
-  font: var(--md-type-label); cursor: pointer; user-select: none;
+  cursor: pointer; user-select: none; min-width: 0;
   transition: background var(--md-duration-short) var(--md-motion-standard),
               transform var(--md-duration-short) var(--md-motion-spring);
 }
-.cat-chip:hover { filter: brightness(1.08); transform: scale(1.03); }
-.cat-chip .dot {
-  width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto;
+.cat-tile:hover { filter: brightness(1.08); transform: scale(1.02); }
+.cat-tile .dot {
+  width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto;
   transition: border-radius var(--md-duration-medium) var(--md-motion-spring);
 }
-.cat-chip:hover .dot { border-radius: 50%; } /* Shape-Morph */
-.cat-chip .count { font: var(--md-type-label-small); opacity: 0.7; }
-.cat-chip.off {
+.cat-tile:hover .dot { border-radius: 50%; } /* Shape-Morph */
+.cat-tile .txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.cat-tile .lbl {
+  font: var(--md-type-label);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cat-tile .count { font: var(--md-type-label-small); font-weight: 400; opacity: 0.7; }
+.cat-tile.off {
   background: transparent;
   border-color: var(--md-sys-color-outline-variant);
   color: var(--md-sys-color-on-surface-variant);
-  text-decoration: line-through; opacity: 0.75;
+  opacity: 0.75;
 }
-.cat-chip .chip-expand {
+.cat-tile.off .lbl { text-decoration: line-through; }
+.cat-tile .tile-expand {
   display: flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: var(--md-shape-full);
-  margin: -2px -3px -2px 0;
+  width: 24px; height: 24px; border-radius: var(--md-shape-full);
+  margin-left: auto; flex: 0 0 auto; opacity: 0.8;
 }
-.cat-chip .chip-expand:hover {
+.cat-tile .tile-expand:hover {
   background: color-mix(in srgb, currentColor 16%, transparent);
+  opacity: 1;
 }
 
-/* --- Untertypen-Popover (öffnet über dem Chip-Feld) ------------------------ */
-.subs-pop {
-  position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 6;
-  width: min(290px, calc(100vw - 28px));
-  background: var(--md-sys-color-surface-container-high);
-  border-radius: var(--md-shape-l);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-  padding: 10px 10px 12px;
-  animation: m3e-pop var(--md-duration-medium) var(--md-motion-spring) both;
-}
-.subs-pop[hidden] { display: none; }
-.subs-head {
+/* --- Untertypen-Drilldown (in derselben Card, mit Zurück) ------------------ */
+.cat-detail { width: min(336px, calc(100vw - 52px)); }
+.cat-detail[hidden] { display: none; }
+.detail-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 2px 4px 6px 7px; font: var(--md-type-label);
+  padding: 0 4px 8px 0; font: var(--md-type-label);
   color: var(--md-sys-color-on-surface);
 }
-.subs-head .dot { width: 10px; height: 10px; border-radius: 3px; }
-.subs-head md-icon-button {
-  margin-left: auto;
-  --md-icon-button-icon-size: 16px;
-  --md-icon-button-state-layer-width: 30px;
-  --md-icon-button-state-layer-height: 30px;
+.detail-head .dot { width: 10px; height: 10px; border-radius: 3px; }
+.detail-head md-icon-button {
+  --md-icon-button-icon-size: 18px;
+  --md-icon-button-state-layer-width: 32px;
+  --md-icon-button-state-layer-height: 32px;
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -261,9 +264,9 @@ html, body {
 /* Ausgeblendet: gedämpft + durchgestrichen — sichtbar, nicht verschwunden. */
 .lg-sub.off { opacity: 0.38; text-decoration: line-through; }
 /* Kategorie aus -> alle Untertypen durchgestrichen (Klick isoliert). */
-.subs-pop.cat-off .lg-sub { opacity: 0.38; text-decoration: line-through; }
-.subs-pop.cat-off .lg-sub:hover { opacity: 0.7; }
-.cat-chip:focus-visible, .lg-sub:focus-visible, .chip-expand:focus-visible {
+.cat-detail.cat-off .lg-sub { opacity: 0.38; text-decoration: line-through; }
+.cat-detail.cat-off .lg-sub:hover { opacity: 0.7; }
+.cat-tile:focus-visible, .lg-sub:focus-visible, .tile-expand:focus-visible {
   outline: 2px solid var(--md-sys-color-primary); outline-offset: 1px;
 }
 
