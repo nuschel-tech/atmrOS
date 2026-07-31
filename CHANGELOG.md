@@ -17,6 +17,26 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.10.0] — 2026-07-31
+
+**Der Rahmen der App: Boot, App Bar, Chips, Controls.**
+
+### Hinzugefügt
+- atmrOS-Boot-Animation beim Seitenstart (Wortmark + wavy progress, federnd;
+  blendet aus, sobald Karte + Daten stehen; hartes 2,5-s-Timeout; reduced-motion
+  respektiert)
+- Zoom + Info als gemeinsame M3-Control-Säule unten rechts (ersetzt die grauen
+  MapLibre-Default-Buttons); Info öffnet einen zentralen Dialog mit Version,
+  Datenstand (live), Datenquellen (ODbL), Software-Lizenzen und
+  Impressum/Datenschutz; dazu dezente „© OpenStreetMap"-Zeile an der Karte
+
+### Geändert
+- App Bar entschlackt: links nur das Wortmark, „Änderungen" als Aktion oben
+  rechts; der Entwickler-Subtitle entfällt (Version lebt im Info-Dialog)
+- Kategorien-Filter als M3-Filter-Chips (Farbpunkt, Zähler, aus = Outline +
+  durchgestrichen); Untertypen öffnen als Popover über dem Chip-Feld —
+  alle Verhaltensweisen (Isolieren, „andere"-Bucket) erhalten
+
 ## [0.9.0] — 2026-07-31
 
 **Light Mode — folgt dem OS.**
