@@ -3,6 +3,7 @@ import "../styles/m3.css";
 import "../styles/expressive.css";
 import "../styles/theme.css";
 import pkg from "../../package.json";
+import { wavySvg } from "../lib/m3e";
 
 const VERSION = pkg.version;
 ---
@@ -17,6 +18,13 @@ const VERSION = pkg.version;
     <title>atmrOS — Infrastruktur Bayern</title>
   </head>
   <body>
+    <!-- Boot-Overlay: sofort im ersten Paint da, map.ts blendet es aus, sobald
+         Karte + Stats bereit sind (hartes Timeout 2,5 s — blockiert nie). -->
+    <div id="boot" class="boot" aria-hidden="true">
+      <div class="boot-brand">atmr<span class="os">OS</span></div>
+      <div class="m3e-progress boot-wave" set:html={wavySvg()} />
+    </div>
+
     <!-- atmrOS — das ehrliche ctOS. Dunkle Karte Bayerns, eine Infrastruktur-
          Ebene, Klick öffnet den Profiler mit Quelle + Stand-Datum. -->
     <div id="map"></div>

@@ -139,7 +139,19 @@ async function loadBasemapStyle(): Promise<maplibregl.StyleSpecification> {
   }
 }
 
+// Boot-Overlay ausblenden — idempotent; hartes Timeout stellt sicher, dass die
+// Animation nie blockiert (auch wenn Basemap/API lahm sind).
+function dismissBoot(): void {
+  const el = document.getElementById("boot");
+  if (!el || el.classList.contains("done")) return;
+  el.classList.add("done");
+  el.addEventListener("transitionend", () => el.remove(), { once: true });
+  setTimeout(() => el.remove(), 700); // Fallback, falls transitionend ausbleibt
+}
+
 export async function initMap(): Promise<void> {
+  setTimeout(dismissBoot, 2500); // Boot darf nie länger als 2,5 s stehen
+
   // pmtiles-Protokoll für MapLibre registrieren (Range-Requests auf die
   // .pmtiles-Datei, z.B. auf BunnyCDN).
   maplibregl.addProtocol("pmtiles", new Protocol().tile);
@@ -237,6 +249,7 @@ export async function initMap(): Promise<void> {
 
     applyFilters();
     startVersionPolling();
+    dismissBoot(); // Karte + Stats stehen — Bühne frei
   });
 
   document.getElementById("panel-close")?.addEventListener("click", () => {

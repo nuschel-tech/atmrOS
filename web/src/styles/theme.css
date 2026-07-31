@@ -16,6 +16,32 @@ html, body {
 
 #map { position: absolute; inset: 0; }
 
+/* --- Boot-Overlay ---------------------------------------------------------- */
+.boot {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--md-sys-color-surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 26px;
+  transition: opacity var(--md-duration-medium) var(--md-motion-emphasized),
+              transform var(--md-duration-medium) var(--md-motion-emphasized);
+}
+.boot.done { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.boot-brand {
+  font: var(--md-type-display); font-size: clamp(52px, 9vw, 88px);
+  color: var(--md-sys-color-on-surface); letter-spacing: -0.03em;
+  animation: m3e-pop 0.55s var(--md-motion-spring) both;
+}
+.boot-brand .os { color: var(--md-sys-color-primary); }
+.boot-wave {
+  width: min(230px, 60vw); height: 22px;
+  animation: m3e-pop 0.55s var(--md-motion-spring) 90ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot { transition-duration: 120ms; }
+  .boot.done { transform: none; }
+  .boot-brand, .boot-wave { animation: none; }
+}
+
 /* --- Top App Bar (warm getönte Pill mit Primary-Schimmer) ------------------ */
 .hud-top {
   position: absolute; top: 14px; left: 14px; z-index: 5;
