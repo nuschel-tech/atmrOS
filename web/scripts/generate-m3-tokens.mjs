@@ -81,8 +81,31 @@ function buildScheme(dark) {
   return out;
 }
 
+// "Heller, freundlicher, leuchtender": Dark-Surfaces einen Tick anheben und
+// wärmer machen (Ton +LIFT, Chroma +CHROMA) — nur Flächenrollen, Akzente und
+// on-*-Farben bleiben spec-konform. Konfigurierbar via M3_SURFACE_LIFT/_CHROMA.
+const SURFACE_LIFT = Number(process.env.M3_SURFACE_LIFT ?? 6);
+const SURFACE_CHROMA = Number(process.env.M3_SURFACE_CHROMA ?? 6);
+const LIFT_ROLES = [
+  "background", "surface", "surfaceDim", "surfaceBright", "surfaceVariant",
+  "surfaceContainerLowest", "surfaceContainerLow", "surfaceContainer",
+  "surfaceContainerHigh", "surfaceContainerHighest",
+];
+
+function liftHex(hex) {
+  const h = Hct.fromInt(argbFromHex(hex));
+  h.tone = Math.min(98, h.tone + SURFACE_LIFT);
+  h.chroma = h.chroma + SURFACE_CHROMA;
+  return hexFromArgb(h.toInt());
+}
+
 const dark = buildScheme(true);
 const light = buildScheme(false);
+if (SURFACE_LIFT || SURFACE_CHROMA) {
+  for (const role of LIFT_ROLES) {
+    if (dark[role]) dark[role] = liftHex(dark[role]); // nur Dark anheben
+  }
+}
 
 const header =
   `/* AUTO-GENERIERT — nicht von Hand editieren.\n` +

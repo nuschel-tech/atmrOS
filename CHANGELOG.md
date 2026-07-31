@@ -17,6 +17,20 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.7.1] — 2026-07-30
+
+**Heller, freundlicher, leuchtender.**
+
+### Geändert
+- Dynamic-Color-Engine: Surface-Lift für Dark (+6 Ton, +6 Chroma, konfigurierbar
+  via `M3_SURFACE_LIFT`/`M3_SURFACE_CHROMA`) — alle Flächen wärmer und heller,
+  Akzente/on-Farben bleiben spec-konform; Coming-soon/Unlock ziehen automatisch mit
+- Karten-UI voller M3 Expressive: App Bar und Legende mit warmem
+  primary-container-Schimmer und Schatten, „Änderungen" als Tonal-Button
+  (Spring-Hover), Zähler als Pill, Aufklapper als Kreis-Buttons mit
+  primary-container-Aktivzustand, größere Kategorie-Punkte mit Shape-Morph
+- Basemap auf die angehobene Surface-Familie harmonisiert
+
 ## [0.7.0] — 2026-07-30
 
 **Neues Farbschema: Orange-UI, Marken-Pink als exklusives Signal.**
