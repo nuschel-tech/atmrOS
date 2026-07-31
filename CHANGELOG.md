@@ -22,6 +22,22 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
   große Brocken); GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
   BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
 
+## [0.17.0] — 2026-07-31
+
+**Die Shell: atmrOS wird ein OS.**
+
+### Hinzugefügt
+- Dock unten mittig (Karte / Änderungen / System / Info) — die Taskbar
+  des OS; die Karte bleibt der Desktop, Module sind Overlays
+- System-Modul: die Kette als Bildschirm — Status, Datenstand, Objekte
+  gesamt, API-Version, je Quelle Stand/Objektzahl/source-String,
+  Ereignis-Bilanz der letzten 7 Tage (alles live aus der API)
+
+### Geändert
+- Änderungen-Toggle + Badge und Info-Button wohnen jetzt im Dock;
+  Zoom-Säule nur noch Zoom; Toast über dem Dock; Legende weicht dem
+  Dock auf schmalen Screens nach oben
+
 ## [0.16.0] — 2026-07-31
 
 **Einstiegsmoment: System online.**
