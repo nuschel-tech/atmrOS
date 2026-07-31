@@ -32,14 +32,26 @@ html, body {
   animation: m3e-pop 0.55s var(--md-motion-spring) both;
 }
 .boot-brand .os { color: var(--md-sys-color-primary); }
+.boot-statement {
+  font: var(--md-type-title); font-weight: 400; text-align: center;
+  color: var(--md-sys-color-on-surface-variant); line-height: 1.45;
+  animation: m3e-pop 0.55s var(--md-motion-spring) 60ms both;
+}
 .boot-wave {
   width: min(230px, 60vw); height: 22px;
   animation: m3e-pop 0.55s var(--md-motion-spring) 90ms both;
 }
+/* "System online": erscheint, sobald /stats da ist — direkt vor der Bühne. */
+.boot-status {
+  font: var(--md-type-label); color: var(--md-sys-color-primary);
+  letter-spacing: 0.04em;
+  animation: m3e-pop 0.4s var(--md-motion-spring) both;
+}
+.boot-status[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .boot { transition-duration: 120ms; }
   .boot.done { transform: none; }
-  .boot-brand, .boot-wave { animation: none; }
+  .boot-brand, .boot-wave, .boot-statement, .boot-status { animation: none; }
 }
 
 /* --- Top App Bar (warm getönte Pill mit Primary-Schimmer) ------------------ */

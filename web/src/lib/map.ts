@@ -48,6 +48,7 @@ interface ChangeItem {
 }
 
 interface StatsResponse {
+  total?: number;
   by_category: Record<string, number>;
   by_subtype: Record<string, Record<string, number>>;
   latest_observed_at: string | null;
@@ -155,17 +156,44 @@ async function loadBasemapStyle(): Promise<maplibregl.StyleSpecification> {
 }
 
 // Boot-Overlay ausblenden — idempotent; hartes Timeout stellt sicher, dass die
-// Animation nie blockiert (auch wenn Basemap/API lahm sind).
+// Animation nie blockiert (auch wenn Basemap/API lahm sind). Beim Ausblenden
+// fliegt die Kamera von der Übersicht in die Arbeits-Zoomstufe (einmalig).
+let flownIn = false;
+
 function dismissBoot(): void {
   const el = document.getElementById("boot");
-  if (!el || el.classList.contains("done")) return;
-  el.classList.add("done");
-  el.addEventListener("transitionend", () => el.remove(), { once: true });
-  setTimeout(() => el.remove(), 700); // Fallback, falls transitionend ausbleibt
+  if (el && !el.classList.contains("done")) {
+    el.classList.add("done");
+    el.addEventListener("transitionend", () => el.remove(), { once: true });
+    setTimeout(() => el.remove(), 700); // Fallback, falls transitionend ausbleibt
+  }
+  if (!flownIn && map) {
+    flownIn = true;
+    if (PREFERS_REDUCED_MOTION) {
+      map.jumpTo({ center: START_CENTER, zoom: START_ZOOM });
+    } else {
+      map.easeTo({ center: START_CENTER, zoom: START_ZOOM, duration: 2400,
+                   easing: (t) => 1 - Math.pow(1 - t, 3) });
+    }
+  }
+}
+
+// "System online": Quellen-Status in den Boot schreiben, kurz stehen lassen,
+// dann Bühne frei. Fällt /stats aus, greift einfach das harte Timeout.
+function bootStatus(stats: StatsResponse): void {
+  const el = document.getElementById("boot-status");
+  const boot = document.getElementById("boot");
+  if (!el || !boot || boot.classList.contains("done")) return;
+  const online = SOURCES.filter((s) => stats.by_source?.[s.db]).length;
+  el.textContent =
+    `${online} ${online === 1 ? "Quelle" : "Quellen"} online · ` +
+    `${(stats.total ?? 0).toLocaleString("de-DE")} Objekte`;
+  el.removeAttribute("hidden");
+  setTimeout(dismissBoot, 650);
 }
 
 export async function initMap(): Promise<void> {
-  setTimeout(dismissBoot, 2500); // Boot darf nie länger als 2,5 s stehen
+  setTimeout(dismissBoot, 3000); // Boot darf nie länger als 3 s stehen
 
   // pmtiles-Protokoll für MapLibre registrieren (Range-Requests auf die
   // .pmtiles-Datei, z.B. auf BunnyCDN).
@@ -180,7 +208,9 @@ export async function initMap(): Promise<void> {
       container: "map",
       style: await loadBasemapStyle(),
       center: START_CENTER,
-      zoom: START_ZOOM,
+      // Start in der Übersicht — die Kamera fliegt beim Boot-Ende auf
+      // START_ZOOM (dismissBoot); reduced-motion springt direkt.
+      zoom: START_ZOOM - 1.4,
       // Eigene M3-Controls (Zoom+Info-Säule); ODbL-Hinweis als eigene Mini-Zeile
       // + Volltext im Info-Dialog.
       attributionControl: false,
@@ -214,6 +244,7 @@ export async function initMap(): Promise<void> {
       dataVersion = stats.latest_observed_at ?? "";
       buildLegend(stats);
       setInfoStand(stats.latest_observed_at);
+      bootStatus(stats); // "System online" zeigen, dann Bühne frei + Kamerafahrt
     }
 
     map.addSource(SRC, {
@@ -300,7 +331,7 @@ export async function initMap(): Promise<void> {
 
     applyFilters();
     startVersionPolling();
-    dismissBoot(); // Karte + Stats stehen — Bühne frei
+    if (!stats) dismissBoot(); // ohne Stats keinen Status-Moment erzwingen
   });
 
   document.getElementById("panel-close")?.addEventListener("click", () => {

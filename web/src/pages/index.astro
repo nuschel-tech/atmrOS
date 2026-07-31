@@ -18,11 +18,14 @@ const VERSION = pkg.version;
     <title>atmrOS — Infrastruktur Bayern</title>
   </head>
   <body>
-    <!-- Boot-Overlay: sofort im ersten Paint da, map.ts blendet es aus, sobald
-         Karte + Stats bereit sind (hartes Timeout 2,5 s — blockiert nie). -->
+    <!-- Boot-Overlay: sofort im ersten Paint da. map.ts füllt den Quellen-
+         Status, sobald /stats da ist ("System online"), blendet aus und fliegt
+         in die Karte (hartes Timeout — blockiert nie). -->
     <div id="boot" class="boot" aria-hidden="true">
       <div class="boot-brand">atmr<span class="os">OS</span></div>
+      <div class="boot-statement">Die Infrastruktur Bayerns.<br />Eine Ebene. Mit Gedächtnis.</div>
       <div class="m3e-progress boot-wave" set:html={wavySvg()} />
+      <div id="boot-status" class="boot-status" hidden></div>
     </div>
 
     <!-- atmrOS — das ehrliche ctOS. Dunkle Karte Bayerns, eine Infrastruktur-
