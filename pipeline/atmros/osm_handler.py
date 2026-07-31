@@ -13,7 +13,7 @@ from typing import Callable
 
 import osmium
 
-from .config import classify, normalize_subtype
+from .config import SUBTYPE_KEY, classify, normalize_subtype
 
 # Ein Record ist ein einfaches Dict — bewusst kein ORM-Objekt, damit die
 # Parse-Stufe DB-frei und für sich testbar bleibt.
@@ -26,14 +26,13 @@ def _tags_to_dict(tags: osmium.osm.TagList) -> dict[str, str]:
 
 
 def _subtype(category: str, tags: osmium.osm.TagList) -> str | None:
-    """Kuratierter Untertyp — nur für die zu groben Kategorien. Der Roh-Wert
+    """Kuratierter Untertyp — nur für Kategorien mit SUBTYPE_KEY. Der Roh-Wert
     läuft durch config.normalize_subtype (kanonische Taxonomie); Unbekanntes
     wird None, bleibt aber als Roh-Tag in attrs. tags.get() existiert in 4.x."""
-    if category == "substation":
-        return normalize_subtype(category, tags.get("substation"))
-    if category in ("tower", "mast"):
-        return normalize_subtype(category, tags.get("tower:type"))
-    return None
+    key = SUBTYPE_KEY.get(category)
+    if key is None:
+        return None
+    return normalize_subtype(category, tags.get(key))
 
 
 class InfraHandler(osmium.SimpleHandler):

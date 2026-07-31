@@ -136,7 +136,7 @@ def run(pbf_arg: str | None, dry_run: bool, if_modified: bool = False) -> dict:
         if not records:
             raise RuntimeError("Keine Objekte gefiltert — Kette würde leer laufen.")
 
-        for cat in ("substation", "tower", "mast"):
+        for cat in config.SUBTYPE_KEY:
             sub = _subtype_summary(records, cat)
             if sub:
                 log.info("Untertypen %s: %s", cat, sub)

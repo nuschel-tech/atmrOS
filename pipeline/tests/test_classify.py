@@ -37,6 +37,16 @@ _NODES = [
     (82, {}, None),
     (90, {"man_made": "tower", "power": "substation"}, "substation"),  # Turmstation
     (91, {"man_made": "tower", "power": "tower"}, "power_tower"),      # Tragmast
+    # Stufe A: Erzeuger, Sirenen, Schaltkästen, Wasser
+    (20, {"power": "generator", "generator:source": "solar"}, "generator"),
+    (21, {"emergency": "siren", "siren:purpose": "civil_defense"}, "siren"),
+    (22, {"man_made": "street_cabinet", "street_cabinet": "telecom"}, "street_cabinet"),
+    (23, {"man_made": "water_tower"}, "water"),
+    (24, {"man_made": "water_works"}, "water"),
+    (25, {"man_made": "wastewater_plant"}, "water"),
+    (92, {"man_made": "mast", "emergency": "siren"}, "siren"),         # Sirenenmast
+    (93, {"man_made": "tower", "power": "generator",
+          "generator:source": "wind"}, "generator"),                   # Windrad
 ]
 
 
@@ -131,6 +141,15 @@ def test_normalize_subtype() -> None:
         ("mast", "lighting", "lighting"),
         ("mast", None, None),
         ("power_tower", "communication", None),         # Kategorie ohne Untertypen
+        # Stufe A
+        ("generator", "solar", "solar"),
+        ("generator", "biofuel", "biomass"),            # Merge
+        ("generator", "solar;wind", None),              # Mehrfachwert -> raus
+        ("street_cabinet", "cable_tv", "telecom"),      # Merge
+        ("street_cabinet", "postal_service", None),     # keine Infrastruktur-Ebene
+        ("water", "water_tower", "water_tower"),
+        ("water", "mast", None),                        # fremder man_made-Wert
+        ("siren", "civil_defense", None),               # Kategorie ohne Untertypen
     ]
     for category, raw, expected in cases:
         got = normalize_subtype(category, raw)
@@ -141,5 +160,5 @@ if __name__ == "__main__":
     test_classify_with_real_taglist()
     test_taglist_has_no_keys_method()
     test_normalize_subtype()
-    print("OK — classify() gegen echtes TagList grün (12 Fälle + keys()-Wächter"
-          " + Untertyp-Normalisierung)")
+    print(f"OK — classify() gegen echtes TagList grün ({len(_NODES)} Fälle"
+          " + keys()-Wächter + Untertyp-Normalisierung)")

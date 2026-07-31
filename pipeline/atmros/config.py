@@ -31,20 +31,28 @@ LICENSE = "ODbL — © OpenStreetMap-Mitwirkende"
 # --- Filter: (OSM-Key, OSM-Value) -> atmrOS-Kategorie ------------------------
 # Reihenfolge = Priorität; erste Übereinstimmung gewinnt. So bleibt die
 # Klassifikation deterministisch, auch wenn ein Objekt mehrere Tags trägt.
-# Funktion schlägt Bauform: power=* vor man_made=mast/tower, damit z.B. eine
-# Turmstation (man_made=tower + power=substation) als Stromstation zählt.
+# Funktion schlägt Bauform: power=*/emergency=* vor man_made=mast/tower, damit
+# z.B. eine Turmstation (man_made=tower + power=substation) als Stromstation
+# und ein Sirenenmast als Sirene zählt.
 CATEGORY_RULES: list[tuple[tuple[str, str], str]] = [
     (("man_made", "surveillance"),      "surveillance"),      # Überwachungskameras
     (("power",    "substation"),        "substation"),        # Umspannwerke
     (("power",    "tower"),             "power_tower"),       # Strommasten
+    (("power",    "generator"),         "generator"),         # Stromerzeuger
+    (("emergency", "siren"),            "siren"),             # Sirenen
     (("man_made", "mast"),              "mast"),              # Sendemasten
     (("man_made", "tower"),             "tower"),             # Türme
+    (("man_made", "street_cabinet"),    "street_cabinet"),    # Schaltkästen
+    (("man_made", "water_tower"),       "water"),             # Wasser-Infrastruktur
+    (("man_made", "water_works"),       "water"),
+    (("man_made", "wastewater_plant"),  "water"),
     (("amenity",  "charging_station"),  "charging_station"),  # Ladesäulen
     (("amenity",  "fuel"),              "fuel"),              # Tankstellen
 ]
 
-# Alle Kategorien (Reihenfolge = Anzeige-/Legenden-Reihenfolge).
-CATEGORIES: list[str] = [cat for _, cat in CATEGORY_RULES]
+# Alle Kategorien (Reihenfolge = Anzeige-/Legenden-Reihenfolge; dedupliziert,
+# weil mehrere Regeln auf dieselbe Kategorie zeigen können — s. "water").
+CATEGORIES: list[str] = list(dict.fromkeys(cat for _, cat in CATEGORY_RULES))
 
 # Schneller Vor-Filter: welche Keys müssen wir überhaupt anschauen? Spart bei
 # der Masse an OSM-Elementen jede Menge Vergleiche.
@@ -116,6 +124,39 @@ SUBTYPE_MAP: dict[str, dict[str, str]] = {
         "siren":              "siren",
         "monitoring":         "monitoring",
     },
+    # power=generator -> generator:source=*
+    "generator": {
+        "solar":              "solar",
+        "wind":               "wind",
+        "hydro":              "hydro",
+        "biomass":            "biomass",
+        "biofuel":            "biomass",
+        "biogas":             "biogas",
+    },
+    # man_made=street_cabinet -> street_cabinet=*
+    "street_cabinet": {
+        "power":              "power",
+        "telecom":            "telecom",
+        "cable_tv":           "telecom",
+        "traffic_control":    "traffic_control",
+        "street_lighting":    "street_lighting",
+    },
+    # Sammel-Kategorie: Untertyp ist der man_made-Wert der greifenden Regel.
+    "water": {
+        "water_works":        "water_works",
+        "wastewater_plant":   "wastewater_plant",
+        "water_tower":        "water_tower",
+    },
+}
+
+# Aus welchem Tag der Roh-Untertyp einer Kategorie kommt.
+SUBTYPE_KEY: dict[str, str] = {
+    "substation":     "substation",
+    "tower":          "tower:type",
+    "mast":           "tower:type",
+    "generator":      "generator:source",
+    "street_cabinet": "street_cabinet",
+    "water":          "man_made",
 }
 
 
