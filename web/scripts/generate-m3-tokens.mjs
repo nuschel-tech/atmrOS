@@ -130,25 +130,47 @@ function syncBasemap() {
   }
   const seedHue = Hct.fromInt(argbFromHex(SEED)).hue;
   const pal = TonalPalette.fromHueAndChroma(seedHue, SURFACE_CHROMA);
-  const waterPal = TonalPalette.fromHueAndChroma(285, 14); // dunkles Violett = Wasser
+  const waterPal = TonalPalette.fromHueAndChroma(285, 14); // Violett-Stich = Wasser
   const t = (tone) => hexFromArgb(pal.tone(tone));
-  const patch = {
-    background: { "background-color": t(15) },
-    earth: { "fill-color": t(19) },
-    landuse: { "fill-color": t(24) },
-    water: { "fill-color": hexFromArgb(waterPal.tone(16)) },
-    buildings: { "fill-color": t(32) },
-    roads_minor: { "line-color": t(30) },
-    roads_major: { "line-color": t(37) },
-    roads_highway: { "line-color": t(45) },
-    boundaries: { "line-color": t(45) },
-    places_locality: { "text-color": t(80), "text-halo-color": t(19) },
+  const w = (tone) => hexFromArgb(waterPal.tone(tone));
+
+  // Dunkel: helle Linien auf dunklem Grund. Hell: dunkle Linien auf hellem Grund.
+  const paints = {
+    dark: {
+      background: { "background-color": t(15) },
+      earth: { "fill-color": t(19) },
+      landuse: { "fill-color": t(24) },
+      water: { "fill-color": w(16) },
+      buildings: { "fill-color": t(32) },
+      roads_minor: { "line-color": t(30) },
+      roads_major: { "line-color": t(37) },
+      roads_highway: { "line-color": t(45) },
+      boundaries: { "line-color": t(45) },
+      places_locality: { "text-color": t(80), "text-halo-color": t(19) },
+    },
+    light: {
+      background: { "background-color": t(95) },
+      earth: { "fill-color": t(97) },
+      landuse: { "fill-color": t(93) },
+      water: { "fill-color": w(88) },
+      buildings: { "fill-color": t(87) },
+      roads_minor: { "line-color": t(85) },
+      roads_major: { "line-color": t(77) },
+      roads_highway: { "line-color": t(66) },
+      boundaries: { "line-color": t(60) },
+      places_locality: { "text-color": t(35), "text-halo-color": t(97) },
+    },
   };
-  for (const layer of style.layers) {
-    if (patch[layer.id]) Object.assign((layer.paint ??= {}), patch[layer.id]);
+
+  for (const [mode, patch] of Object.entries(paints)) {
+    const out = JSON.parse(JSON.stringify(style));
+    for (const layer of out.layers) {
+      if (patch[layer.id]) Object.assign((layer.paint ??= {}), patch[layer.id]);
+    }
+    const file = mode === "dark" ? "style.json" : "style-light.json";
+    writeFileSync(join(root, "public/basemap", file), JSON.stringify(out, null, 2) + "\n");
   }
-  writeFileSync(stylePath, JSON.stringify(style, null, 2) + "\n");
-  console.log("basemap: style.json aus derselben Palette synchronisiert");
+  console.log("basemap: style.json (dark) + style-light.json aus derselben Palette");
 }
 
 const header =
@@ -160,10 +182,12 @@ const cssVars = (roles, indent = "  ") =>
     .map(([k, v]) => `${indent}--md-sys-color-${kebab(k)}: ${v};`)
     .join("\n");
 
+// Theme folgt AUSSCHLIESSLICH dem OS (prefers-color-scheme) — kein manueller
+// Umschalter. Dark ist die Basis, Light überschreibt per Media Query.
 const css =
-  `${header}:root {\n${cssVars(dark)}\n}\n\n` +
-  `/* Light-Scheme: vorbereitet, Aktivierung via <html data-theme="light"> */\n` +
-  `:root[data-theme="light"] {\n${cssVars(light)}\n}\n`;
+  `${header}:root {\n${cssVars(dark)}\n  color-scheme: dark;\n}\n\n` +
+  `@media (prefers-color-scheme: light) {\n` +
+  `  :root {\n${cssVars(light, "    ")}\n    color-scheme: light;\n  }\n}\n`;
 
 const ts =
   `// AUTO-GENERIERT — nicht von Hand editieren. npm run tokens\n` +

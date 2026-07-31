@@ -4,9 +4,19 @@
 // Das Marken-Pink #e31c8d ist EXKLUSIV für Änderungs-Ereignisse (NEU/GEÄNDERT)
 // reserviert — nie als Kategorie- oder Deko-Farbe.
 
-import { M3_DARK } from "./m3-color.generated";
+import { M3_DARK, M3_LIGHT } from "./m3-color.generated";
 
-// Marken-Signal (fest, nicht aus dem Orange-Scheme generiert — s. m3.css).
+// Theme folgt dem OS (kein manueller Umschalter). Kartenfarben sind kein CSS —
+// hier wird das passende Scheme zur Ladezeit gewählt; bei OS-Wechsel lädt
+// map.ts die Seite neu. Guard: Modul läuft nur im Browser, defensiv trotzdem.
+const IS_LIGHT =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-color-scheme: light)").matches;
+
+// Aktives Scheme für Karten-Paints (Auswahl, Ereignisse, Fallback-Hintergrund).
+export const M3 = IS_LIGHT ? M3_LIGHT : M3_DARK;
+
+// Marken-Signal (fest, nicht aus dem Seed generiert — s. m3.css).
 export const SIGNAL = "#e31c8d";
 export const SIGNAL_BRIGHT = "#ffb0ce";
 
@@ -27,7 +37,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 // Auswahl-/Signalfarbe aus der Dynamic-Color-Engine (primary, dark).
-export const ACCENT = M3_DARK.primary;
+export const ACCENT = M3.primary;
 
 export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
   CATEGORIES.map((c) => [c.id, c]),
@@ -99,8 +109,8 @@ export function subtypeLabel(value: string): string {
 export const EVENT_META: Record<string, { label: string; color: string; cls: string }> = {
   NEW: { label: "NEU", color: SIGNAL, cls: "ev-new" },
   CHANGED: { label: "GEÄNDERT", color: SIGNAL, cls: "ev-changed" },
-  RESTORED: { label: "WIEDER DA", color: M3_DARK.secondary, cls: "ev-restored" },
-  DELETED: { label: "GELÖSCHT", color: M3_DARK.outline, cls: "ev-deleted" },
+  RESTORED: { label: "WIEDER DA", color: M3.secondary, cls: "ev-restored" },
+  DELETED: { label: "GELÖSCHT", color: M3.outline, cls: "ev-deleted" },
 };
 
 export function eventColorExpression(): unknown[] {

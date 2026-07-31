@@ -25,7 +25,7 @@ import {
   eventColorExpression,
   subtypeLabel,
 } from "./categories";
-import { M3_DARK } from "./m3-color.generated";
+import { M3 } from "./categories";
 
 const SRC = "atmros-infra";
 const LAYER = "infra-points";
@@ -98,8 +98,21 @@ function fallbackStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
     sources: {},
-    layers: [{ id: "background", type: "background", paint: { "background-color": M3_DARK.surface } }],
+    layers: [{ id: "background", type: "background", paint: { "background-color": M3.surface } }],
   };
+}
+
+// Theme folgt dem OS: heller Basemap-Style bei Light-Präferenz. Bei einem
+// OS-Wechsel zur Laufzeit lädt die Seite neu (seltenes Ereignis; ein
+// setStyle-Umbau müsste alle eigenen Layer neu aufbauen — nicht wert).
+const PREFERS_LIGHT =
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(prefers-color-scheme: light)").matches;
+
+function basemapStyleUrl(): string {
+  return PREFERS_LIGHT
+    ? BASEMAP_STYLE_URL.replace(/style\.json$/, "style-light.json")
+    : BASEMAP_STYLE_URL;
 }
 
 // Selbst gehostete Protomaps-Basemap laden und die pmtiles-/Glyph-URLs
@@ -107,7 +120,7 @@ function fallbackStyle(): maplibregl.StyleSpecification {
 async function loadBasemapStyle(): Promise<maplibregl.StyleSpecification> {
   if (!PMTILES_URL) return fallbackStyle();
   try {
-    const res = await fetch(BASEMAP_STYLE_URL);
+    const res = await fetch(basemapStyleUrl());
     if (!res.ok) return fallbackStyle();
     const style = (await res.json()) as maplibregl.StyleSpecification & {
       sources: Record<string, { url?: string }>;
@@ -130,6 +143,10 @@ export async function initMap(): Promise<void> {
   // pmtiles-Protokoll für MapLibre registrieren (Range-Requests auf die
   // .pmtiles-Datei, z.B. auf BunnyCDN).
   maplibregl.addProtocol("pmtiles", new Protocol().tile);
+
+  // OS wechselt das Farbschema -> sauber neu aufsetzen (Basemap + Paints).
+  window.matchMedia?.("(prefers-color-scheme: light)")
+    .addEventListener?.("change", () => window.location.reload());
 
   map = new maplibregl.Map({
     container: "map",

@@ -171,7 +171,7 @@ Frühere Sessions-Notizen zu Terminal-Optik/Switzer/Squircle gelten NICHT mehr.
 - **Farben: Dynamic Color.** Schemes werden aus dem UI-Seed **Cyan `#00bcd4`**
   **generiert** (`@material/material-color-utilities`, HCT, Scheme vibrant),
   nicht handgepickt. Es gelten die M3-Farbrollen (primary/secondary/tertiary/
-  surface-Stufen …). Dark ist Default; Light-Scheme wird miterzeugt.
+  surface-Stufen …). Dark und Light folgen AUSSCHLIESSLICH der OS-Präferenz (prefers-color-scheme, kein manueller Umschalter); beide Schemes kommen aus derselben Engine, die Basemap hat je einen Style (style.json / style-light.json, auto-generiert).
 - **Signal-Disziplin: das Marken-Pink `#e31c8d` ist EXKLUSIV das
   Änderungs-Signal** (NEU/GEÄNDERT) — als feste Konstante (`--atmr-signal-*`
   in m3.css, `SIGNAL` in categories.ts), NICHT aus dem Orange-Scheme abgeleitet

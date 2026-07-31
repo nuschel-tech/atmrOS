@@ -17,6 +17,21 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.9.0] — 2026-07-31
+
+**Light Mode — folgt dem OS.**
+
+### Hinzugefügt
+- Light-Scheme aktiv: Theme folgt ausschließlich `prefers-color-scheme`
+  (kein manueller Umschalter). Tokens als Media-Query aus derselben Engine,
+  `color-scheme` gesetzt (native Scrollbars/Controls passen sich an)
+- Helle Basemap: Generator erzeugt `style-light.json` mit (dunkle Linien auf
+  hellem Grund); die Karte wählt den Style zur Ladezeit, ein OS-Wechsel lädt
+  die Seite sauber neu
+- Karten-Paints scheme-bewusst (Auswahl/Ereignisse/Fallback aus dem aktiven
+  Scheme); Signal-Pink-Töne mit Light-Varianten (Container hell, Text dunkel)
+- Coming-soon und /unlock ebenfalls OS-gesteuert hell/dunkel
+
 ## [0.8.0] — 2026-07-31
 
 **Neues Farbschema: leuchtendes Cyan.**

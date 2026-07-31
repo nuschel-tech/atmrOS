@@ -6,7 +6,7 @@
 // (Middleware gibt /fonts auch im gesperrten Zustand frei; DSGVO: kein
 // Google-Fonts-Request). KEIN Hinweis auf /unlock.
 
-import { M3_DARK as T } from "./m3-color.generated";
+import { M3_DARK as T, M3_LIGHT as L } from "./m3-color.generated";
 import { PETAL_PATH } from "./m3e";
 import pkg from "../../package.json";
 
@@ -46,6 +46,30 @@ export function comingSoonHtml(): string {
     --spring:cubic-bezier(0.34,1.56,0.64,1);
     --emphasized:cubic-bezier(0.2,0,0,1);
     --font:"Roboto","Segoe UI",system-ui,-apple-system,sans-serif;
+    color-scheme:dark;
+  }
+  /* Theme folgt dem OS (kein Umschalter): Light-Scheme aus derselben Engine. */
+  @media(prefers-color-scheme:light){
+    :root{
+      --primary:${L.primary};
+      --on-primary:${L.onPrimary};
+      --primary-container:${L.primaryContainer};
+      --on-primary-container:${L.onPrimaryContainer};
+      --secondary:${L.secondary};
+      --secondary-container:${L.secondaryContainer};
+      --on-secondary-container:${L.onSecondaryContainer};
+      --tertiary:${L.tertiary};
+      --tertiary-container:${L.tertiaryContainer};
+      --surface:${L.surface};
+      --surface-container-low:${L.surfaceContainerLow};
+      --surface-container:${L.surfaceContainer};
+      --surface-container-high:${L.surfaceContainerHigh};
+      --on-surface:${L.onSurface};
+      --on-surface-variant:${L.onSurfaceVariant};
+      --outline:${L.outline};
+      --outline-variant:${L.outlineVariant};
+      color-scheme:light;
+    }
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}

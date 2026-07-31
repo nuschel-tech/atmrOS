@@ -8,7 +8,7 @@
 import { verifyPassword } from "../lib/auth";
 import { signSession, verifySession } from "../lib/session";
 import { rateLimit, clientIp } from "../lib/ratelimit";
-import { M3_DARK as T } from "../lib/m3-color.generated";
+import { M3_DARK as T, M3_LIGHT as L } from "../lib/m3-color.generated";
 import { PETAL_PATH } from "../lib/m3e";
 
 const COOKIE = "atmros_session";
@@ -64,6 +64,19 @@ const css = `
     --error-container:${T.errorContainer};--on-error-container:${T.onErrorContainer};
     --spring:cubic-bezier(0.34,1.56,0.64,1);
     --font:"Roboto","Segoe UI",system-ui,-apple-system,sans-serif;
+    color-scheme:dark;
+  }
+  @media(prefers-color-scheme:light){
+    :root{
+      --primary:${L.primary};--on-primary:${L.onPrimary};
+      --primary-container:${L.primaryContainer};--on-primary-container:${L.onPrimaryContainer};
+      --surface:${L.surface};--sc-low:${L.surfaceContainerLow};--sc:${L.surfaceContainer};
+      --sc-high:${L.surfaceContainerHigh};--sc-highest:${L.surfaceContainerHighest};
+      --on-surface:${L.onSurface};--on-surface-variant:${L.onSurfaceVariant};
+      --outline:${L.outline};--outline-variant:${L.outlineVariant};
+      --error-container:${L.errorContainer};--on-error-container:${L.onErrorContainer};
+      color-scheme:light;
+    }
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%}

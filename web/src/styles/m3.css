@@ -41,6 +41,18 @@
   --atmr-signal-bright: #ffb0ce;
   --atmr-signal-container: #8c0054;
   --atmr-on-signal-container: #ffd9e5;
+}
+
+/* Light (OS-Präferenz): Signal-Container hell, Text dunkel — Pink bleibt Pink. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --atmr-signal-bright: #e31c8d;
+    --atmr-signal-container: #ffd9e5;
+    --atmr-on-signal-container: #64003a;
+  }
+}
+
+:root {
 
   /* --- Typographie ------------------------------------------------------- */
   --md-ref-typeface: "Roboto", "Segoe UI", system-ui, -apple-system, sans-serif;
