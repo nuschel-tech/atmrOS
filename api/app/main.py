@@ -124,8 +124,10 @@ def tiles(z: int, x: int, y: int) -> Response:
 
 @router.get("/object/{osm_type}/{osm_id}", dependencies=[Depends(require_session)])
 def object_detail(osm_type: str, osm_id: int) -> dict:
-    if osm_type not in ("n", "w", "r"):
-        raise HTTPException(400, "osm_type must be n, w or r")
+    # 'p' = Pegel (PEGELONLINE) — Nicht-OSM-Quellen laufen durch dasselbe
+    # Objektmodell, nur mit eigenem Typ-Diskriminator.
+    if osm_type not in ("n", "w", "r", "p"):
+        raise HTTPException(400, "osm_type must be n, w, r or p")
 
     engine = get_engine()
     with engine.connect() as conn:
@@ -175,7 +177,8 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
 
 
 # Kategorien mit Untertyp-Verfeinerung (zu grob ohne subtype).
-_REFINED = ("substation", "tower", "mast", "generator", "street_cabinet", "water")
+_REFINED = ("substation", "tower", "mast", "generator", "street_cabinet", "water",
+            "pegel")
 
 
 @router.get("/stats", dependencies=[Depends(require_session)])
@@ -197,6 +200,9 @@ def stats() -> dict:
         latest = conn.execute(text(
             "SELECT max(observed_at) AS m FROM observation"
         )).first()
+        per_source = conn.execute(text(
+            "SELECT source, max(observed_at) AS m FROM observation GROUP BY source"
+        )).all()
 
     # Nur benannte, kuratierte Untertypen (Ingest normalisiert; NULL = kein
     # kuratierter Wert und wird bewusst nicht als Pseudo-Zeile ausgewiesen —
@@ -210,6 +216,8 @@ def stats() -> dict:
         "by_category": {r.category: r.n for r in by_cat},
         "by_subtype": by_subtype,
         "latest_observed_at": latest.m.isoformat() if latest and latest.m else None,
+        # Stand je Quelle — die Quellen-Kacheln der Legende zeigen ihn an.
+        "by_source": {r.source: r.m.isoformat() for r in per_source if r.m},
     }
 
 
@@ -261,7 +269,63 @@ _OSM_TYPE_LONG = {"n": "node", "w": "way", "r": "relation"}
 
 
 def _osm_url(osm_type: str, osm_id: int) -> str:
+    """Deep-Link zur Nachprüfbarkeit — je Quelle das passende Original."""
+    if osm_type == "p":
+        return f"https://www.pegelonline.wsv.de/gast/stammdaten?pegelnr={osm_id}"
     return f"https://www.openstreetmap.org/{_OSM_TYPE_LONG[osm_type]}/{osm_id}"
+
+
+# --- Live-Wasserstand (PEGELONLINE) ------------------------------------------
+# Bewusst ein Server-Proxy statt Client-Fetch: keine Nutzer-IPs an Dritte
+# (DSGVO-Linie des Projekts) + ein kleiner Cache schont die WSV-API.
+_PEGEL_API = "https://www.pegelonline.wsv.de/webservices/rest-api/v2"
+_PEGEL_CACHE_S = 300
+_pegel_cache: dict[int, tuple[float, dict]] = {}
+
+
+@router.get("/pegel/{osm_id}/current", dependencies=[Depends(require_session)])
+def pegel_current(osm_id: int) -> dict:
+    """Aktueller Wasserstand (W) eines Pegels — live von PEGELONLINE, nicht
+    aus der DB: Messwerte sind keine Beobachtungen im Sinne des Archivs."""
+    import time
+
+    import requests
+
+    now = time.monotonic()
+    hit = _pegel_cache.get(osm_id)
+    if hit and now - hit[0] < _PEGEL_CACHE_S:
+        return hit[1]
+
+    with get_engine().connect() as conn:
+        row = conn.execute(text(
+            """
+            SELECT attrs->>'uuid' AS uuid FROM observation
+            WHERE osm_type = 'p' AND osm_id = :i
+            ORDER BY observed_at DESC, id DESC LIMIT 1
+            """
+        ), {"i": osm_id}).first()
+    if row is None or not row.uuid:
+        raise HTTPException(404, "pegel not found")
+
+    try:
+        resp = requests.get(
+            f"{_PEGEL_API}/stations/{row.uuid}/W/currentmeasurement.json",
+            timeout=10)
+        resp.raise_for_status()
+        m = resp.json()
+    except requests.RequestException:
+        raise HTTPException(502, "pegelonline unreachable")
+
+    out = {
+        "value_cm": m.get("value"),
+        "timestamp": m.get("timestamp"),
+        "state": m.get("stateMnwMhw"),  # low/normal/high — Einordnung der WSV
+        "source": "wsv/pegelonline",
+        "source_url": f"{_PEGEL_API}/stations/{row.uuid}/W/currentmeasurement.json",
+        "license": "dl-zero-de/2.0 — www.pegelonline.wsv.de",
+    }
+    _pegel_cache[osm_id] = (now, out)
+    return out
 
 
 # Routen unter dem Präfix einhängen (leer = Root, "/api" = Single-Origin).
