@@ -24,22 +24,24 @@ export interface Category {
   id: string;
   label: string;
   color: string;
+  src: string; // Quelle (SOURCES.id), zu der die Kategorie gehört
 }
 
 // Labels: kurz, Plural, karten-tauglich (gleich breite Kacheln). Die Schärfe
 // ("Kirchturm ist kein Sendemast") liefert die Untertypen-Ansicht.
 export const CATEGORIES: Category[] = [
-  { id: "mast",             label: "Sendemasten",   color: "#4b9fd4" },
-  { id: "tower",            label: "Türme",         color: "#e5a44e" },
-  { id: "power_tower",      label: "Strommasten",   color: "#8a8f98" },
-  { id: "substation",       label: "Umspannwerke",  color: "#b3c94f" },
-  { id: "generator",        label: "Stromerzeuger", color: "#ddc94a" },
-  { id: "street_cabinet",   label: "Schaltkästen",  color: "#b08d6b" },
-  { id: "water",            label: "Wasser",        color: "#4ec9b8" },
-  { id: "siren",            label: "Sirenen",       color: "#e0715c" },
-  { id: "charging_station", label: "Ladesäulen",    color: "#3fb27f" },
-  { id: "surveillance",     label: "Kameras",       color: "#c56b7e" },
-  { id: "fuel",             label: "Tankstellen",   color: "#9a7bd0" },
+  { id: "mast",             label: "Sendemasten",   color: "#4b9fd4", src: "osm" },
+  { id: "tower",            label: "Türme",         color: "#e5a44e", src: "osm" },
+  { id: "power_tower",      label: "Strommasten",   color: "#8a8f98", src: "osm" },
+  { id: "substation",       label: "Umspannwerke",  color: "#b3c94f", src: "osm" },
+  { id: "generator",        label: "Stromerzeuger", color: "#ddc94a", src: "osm" },
+  { id: "street_cabinet",   label: "Schaltkästen",  color: "#b08d6b", src: "osm" },
+  { id: "water",            label: "Wasser",        color: "#4ec9b8", src: "osm" },
+  { id: "siren",            label: "Sirenen",       color: "#e0715c", src: "osm" },
+  { id: "charging_station", label: "Ladesäulen",    color: "#3fb27f", src: "osm" },
+  { id: "surveillance",     label: "Kameras",       color: "#c56b7e", src: "osm" },
+  { id: "fuel",             label: "Tankstellen",   color: "#9a7bd0", src: "osm" },
+  { id: "pegel",            label: "Pegel",         color: "#5677e0", src: "pegelonline" },
 ];
 
 // Auswahl-/Signalfarbe aus der Dynamic-Color-Engine (primary, dark).
@@ -51,21 +53,33 @@ export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
 
 // --- Quellen: oberste Legenden-Ebene -----------------------------------------
 // Die Kern-Signatur von atmrOS als Navigation: erst die Quelle, dann was sie
-// liefert. Aktuell eine; jede Stufe-B-Quelle (PEGELONLINE, BNetzA-Register,
-// MaStR …) bekommt hier später ihren eigenen Eintrag mit eigenen Kategorien.
+// liefert. Kategorien hängen über Category.src an ihrer Quelle; `db` ist der
+// source-String der Beobachtungen (für den Stand je Quelle aus /stats).
 export interface SourceDef {
   id: string;
   label: string;
-  sub: string; // Herkunfts-Zeile unterm Namen (Anbieter/Extrakt)
+  sub: string; // Herkunfts-Zeile unterm Namen (Anbieter/Extrakt/Lizenzraum)
+  db: string;  // observation.source in der Pipeline
   categories: string[];
 }
+
+const catsOf = (src: string): string[] =>
+  CATEGORIES.filter((c) => c.src === src).map((c) => c.id);
 
 export const SOURCES: SourceDef[] = [
   {
     id: "osm",
     label: "OpenStreetMap",
     sub: "Geofabrik · Bayern-Extrakt",
-    categories: CATEGORIES.map((c) => c.id),
+    db: "osm/geofabrik",
+    categories: catsOf("osm"),
+  },
+  {
+    id: "pegelonline",
+    label: "PEGELONLINE",
+    sub: "WSV · Bundeswasserstraßen",
+    db: "wsv/pegelonline",
+    categories: catsOf("pegelonline"),
   },
 ];
 
@@ -73,6 +87,7 @@ export const SOURCES: SourceDef[] = [
 // kein Sendemast, eine Ortsnetzstation kein Umspannwerk).
 export const REFINED = new Set([
   "substation", "tower", "mast", "generator", "street_cabinet", "water",
+  "pegel",
 ]);
 
 // Kuratierte Untertypen: der Ingest normalisiert die Roh-Tags auf diese
@@ -114,6 +129,10 @@ const SUBTYPE_LABELS: Record<string, string> = {
   water_works: "Wasserwerke",
   wastewater_plant: "Kläranlagen",
   water_tower: "Wassertürme",
+  // pegel (Gewässer, kuratiert im Pegel-Ingest)
+  donau: "Donau",
+  main: "Main",
+  mdk: "Main-Donau-Kanal",
 };
 
 // Nur kuratierte Untertypen bekommen eine Drilldown-Zeile.

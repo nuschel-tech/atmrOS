@@ -160,6 +160,26 @@ Während ein echter Ingest läuft, zeigt die Seite oben „// Daten werden
 aktualisiert …"; ist der neue Stand da, erscheint unten der Toast
 „neuer Stand verfügbar" (kein Reload nötig).
 
+## Quelle 2: PEGELONLINE (Pegel-Stammdaten, täglich)
+
+Zweite Quelle der Kette (Stufe B): `python -m atmros.pegel` holt die
+PEGELONLINE-Stationsliste (WSV, dl-zero-de/2.0), filtert auf Bayern
+(Donau/Main/MDK) und schreibt ~31 Pegel durch dieselbe Kette (Rohlager →
+observation → Diff). Messwerte landen NICHT in der DB — den Live-Wasserstand
+holt die API on demand (`/pegel/{id}/current`, 5-Min-Cache).
+
+```bash
+# Einmal von Hand (Baseline):
+docker compose run --rm --entrypoint python ingest -m atmros.pegel
+
+# Täglicher Timer:
+sudo cp deploy/systemd/atmros-pegel.service /etc/systemd/system/
+sudo cp deploy/systemd/atmros-pegel.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now atmros-pegel.timer
+journalctl -u atmros-pegel.service -f
+```
+
 ## Troubleshooting
 
 - **Nach `/unlock` wieder Coming-soon / bleibe ausgeloggt.** (a) Zugriff über

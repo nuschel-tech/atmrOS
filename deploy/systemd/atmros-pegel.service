@@ -1,0 +1,14 @@
+# atmrOS Pegel-Ingest (PEGELONLINE, Quelle 2) — Einmal-Job, vom Timer gestartet.
+# WorkingDirectory auf dein geklontes Projektverzeichnis anpassen.
+[Unit]
+Description=atmrOS Pegel-Ingest (PEGELONLINE Stammdaten)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/atmros
+# Gleicher Container wie der OSM-Ingest, nur anderes Modul. Die Stationsliste
+# ist ~260 KB — kein --if-modified nötig, der Lauf ist immer billig.
+ExecStart=/usr/bin/docker compose run --rm --entrypoint python ingest -m atmros.pegel
+TimeoutStartSec=300

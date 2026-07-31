@@ -1,0 +1,12 @@
+# atmrOS Pegel-Timer: täglich reicht — in die Beobachtungen gehen nur
+# Stammdaten (neue/verschobene/entfernte Pegel), keine Messwerte. Der
+# Live-Wasserstand kommt on demand über die API (/pegel/{id}/current).
+[Unit]
+Description=atmrOS Pegel-Ingest täglich
+
+[Timer]
+OnCalendar=*-*-* 03:23:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

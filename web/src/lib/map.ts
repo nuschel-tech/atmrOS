@@ -50,6 +50,7 @@ interface StatsResponse {
   by_category: Record<string, number>;
   by_subtype: Record<string, Record<string, number>>;
   latest_observed_at: string | null;
+  by_source?: Record<string, string>; // observation.source -> Stand (ISO)
 }
 
 interface ObjectDetail {
@@ -521,14 +522,15 @@ function showLegendView(view: "sources" | "cats" | "subs"): void {
 function buildSources(stats: StatsResponse): void {
   const host = document.getElementById("legend-sources");
   if (!host) return;
-  const stand = stats.latest_observed_at
-    ? new Date(stats.latest_observed_at).toLocaleDateString("de-DE",
-        { day: "2-digit", month: "2-digit", year: "numeric" })
-    : null;
+  const fmtStand = (iso: string | null | undefined): string | null =>
+    iso ? new Date(iso).toLocaleDateString("de-DE",
+      { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
   const rows: string[] = [];
   for (const [i, src] of SOURCES.entries()) {
     const total = src.categories.reduce(
       (acc, cat) => acc + (stats.by_category[cat] ?? 0), 0);
+    // Quelle noch ohne Daten (Ingest lief nie) -> ehrlich zeigen, nicht bauen.
+    const stand = fmtStand(stats.by_source?.[src.db]);
     const off = hiddenSources.has(src.id);
     rows.push(
       `<div class="src-tile${off ? " off" : ""} m3e-pop" style="--m3e-delay:${i * 35}ms" ` +
@@ -543,20 +545,26 @@ function buildSources(stats: StatsResponse): void {
   host.innerHTML = rows.join("");
 }
 
-// --- Ansicht 1: Kategorien einer Quelle --------------------------------------
+// --- Ansicht 1: Kategorien EINER Quelle --------------------------------------
 function buildLegend(stats: StatsResponse): void {
+  buildSources(stats);
+  // Grid gehört immer zur gerade geöffneten Quelle.
+  if (currentSource) buildGrid(stats, currentSource);
+  // Offene Detailansicht mit frischen Zahlen neu aufbauen (Daten-Update).
+  if (detailCat) renderDetail(detailCat);
+}
+
+function buildGrid(stats: StatsResponse, srcId: string): void {
   const host = document.getElementById("legend-grid");
   if (!host) return;
-  buildSources(stats);
   const tiles: string[] = [];
 
-  for (const c of CATEGORIES) {
+  for (const [i, c] of CATEGORIES.filter((c) => c.src === srcId).entries()) {
     const total = stats.by_category[c.id] ?? 0;
     const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
     // Drilldown nur, wenn es kuratierte Untertypen zu zeigen gibt.
     const hasSubs = !!subs && Object.keys(subs).some((s) => curatedLabel(s) !== null);
     const off = hiddenCategories.has(c.id);
-    const delay = CATEGORIES.indexOf(c) * 35;
 
     const expand = hasSubs
       ? `<span class="tile-expand" role="button" tabindex="0" data-expand="${c.id}" ` +
@@ -564,7 +572,7 @@ function buildLegend(stats: StatsResponse): void {
       : "";
 
     tiles.push(
-      `<div class="cat-tile${off ? " off" : ""} m3e-pop" style="--m3e-delay:${delay}ms" ` +
+      `<div class="cat-tile${off ? " off" : ""} m3e-pop" style="--m3e-delay:${i * 35}ms" ` +
       `role="button" tabindex="0" aria-pressed="${!off}" data-cat="${c.id}">` +
       `<span class="dot" style="background:${c.color}"></span>` +
       `<span class="txt"><span class="lbl">${c.label}</span>` +
@@ -572,8 +580,6 @@ function buildLegend(stats: StatsResponse): void {
     );
   }
   host.innerHTML = tiles.join("");
-  // Offene Detailansicht mit frischen Zahlen neu aufbauen (Daten-Update).
-  if (detailCat) renderDetail(detailCat);
 }
 
 function sourceOf(catId: string): string | null {
@@ -584,10 +590,11 @@ function showCats(srcId: string): void {
   const src = SOURCES.find((s) => s.id === srcId);
   const title = document.getElementById("cats-title");
   if (!src || !title) return;
+  currentSource = srcId;
+  if (latestStats) buildGrid(latestStats, srcId);
   title.textContent = src.label;
   document.getElementById("legend-cats")
     ?.classList.toggle("src-off", hiddenSources.has(srcId));
-  currentSource = srcId;
   showLegendView("cats");
 }
 
@@ -823,17 +830,25 @@ function renderPanel(head: HTMLElement, body: HTMLElement, obj: ObjectDetail): v
   const observed = current ? formatDate(current.observed_at) : "—";
   const source = current ? current.source : "—";
 
+  const checkLabel = obj.osm_type === "p" ? "WSV prüfen" : "OSM prüfen";
   let html = `
     <div class="source-card">
       <div class="k">Quelle</div>
       <div class="v">${escapeHtml(source)}
-        &nbsp;·&nbsp;<a href="${obj.osm_url}" target="_blank" rel="noopener">OSM prüfen ↗</a>
+        &nbsp;·&nbsp;<a href="${obj.osm_url}" target="_blank" rel="noopener">${checkLabel} ↗</a>
       </div>
       <div class="split">
         <div><div class="k">Stand</div><div class="v">${observed}</div></div>
         <div><div class="k">Position</div><div class="v">${obj.lat.toFixed(5)}, ${obj.lon.toFixed(5)}</div></div>
       </div>
     </div>`;
+
+  // Pegel: aktueller Wasserstand live (API-Proxy) — bewusst getrennt von den
+  // archivierten Stammdaten, mit eigener Quellen-/Zeitangabe.
+  if (obj.category === "pegel") {
+    html += `<div id="pegel-live" class="live-card"><span class="lbl">Wasserstand</span>
+      <span class="val">// lade …</span></div>`;
+  }
 
   const attrs = current?.attrs ?? {};
   const keys = Object.keys(attrs).sort();
@@ -850,6 +865,29 @@ function renderPanel(head: HTMLElement, body: HTMLElement, obj: ObjectDetail): v
   const n = obj.history.length;
   html += `<div class="hist">// ${n} Beobachtung${n === 1 ? "" : "en"} · erstmals gesehen ${formatDate(obj.first_seen)}</div>`;
   body.innerHTML = html;
+  if (obj.category === "pegel") void loadPegelCurrent(obj.osm_id);
+}
+
+// Live-Wasserstand nachladen und in die Karte im Panel schreiben.
+async function loadPegelCurrent(osmId: number): Promise<void> {
+  const el = document.getElementById("pegel-live");
+  if (!el) return;
+  try {
+    const res = await fetch(`${API_BASE}/pegel/${osmId}/current`, { credentials: "include" });
+    if (!res.ok) throw new Error(String(res.status));
+    const m = (await res.json()) as {
+      value_cm: number | null; timestamp: string | null; state: string | null;
+    };
+    if (m.value_cm == null) throw new Error("no value");
+    const state = m.state === "high" ? " · hoch" : m.state === "low" ? " · niedrig" : "";
+    const ts = m.timestamp ? formatDate(m.timestamp) : "";
+    el.innerHTML = `<span class="lbl">Wasserstand</span>
+      <span class="val"><b>${escapeHtml(String(m.value_cm))} cm</b>${escapeHtml(state)}</span>
+      <span class="ts">live · ${escapeHtml(ts)} · PEGELONLINE</span>`;
+  } catch {
+    el.innerHTML = `<span class="lbl">Wasserstand</span>
+      <span class="val">derzeit nicht abrufbar</span>`;
+  }
 }
 
 function renderValue(v: string): string {
