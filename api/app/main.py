@@ -175,7 +175,7 @@ def object_detail(osm_type: str, osm_id: int) -> dict:
 
 
 # Kategorien mit Untertyp-Verfeinerung (zu grob ohne subtype).
-_REFINED = ("substation", "tower", "mast")
+_REFINED = ("substation", "tower", "mast", "generator", "street_cabinet", "water")
 
 
 @router.get("/stats", dependencies=[Depends(require_session)])

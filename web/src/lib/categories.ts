@@ -29,13 +29,17 @@ export interface Category {
 // Labels: kurz, Plural, karten-tauglich (gleich breite Kacheln). Die Schärfe
 // ("Kirchturm ist kein Sendemast") liefert die Untertypen-Ansicht.
 export const CATEGORIES: Category[] = [
-  { id: "mast",             label: "Sendemasten",  color: "#4b9fd4" },
-  { id: "tower",            label: "Türme",        color: "#e5a44e" },
-  { id: "power_tower",      label: "Strommasten",  color: "#8a8f98" },
-  { id: "substation",       label: "Umspannwerke", color: "#b3c94f" },
-  { id: "charging_station", label: "Ladesäulen",   color: "#3fb27f" },
-  { id: "surveillance",     label: "Kameras",      color: "#c56b7e" },
-  { id: "fuel",             label: "Tankstellen",  color: "#9a7bd0" },
+  { id: "mast",             label: "Sendemasten",   color: "#4b9fd4" },
+  { id: "tower",            label: "Türme",         color: "#e5a44e" },
+  { id: "power_tower",      label: "Strommasten",   color: "#8a8f98" },
+  { id: "substation",       label: "Umspannwerke",  color: "#b3c94f" },
+  { id: "generator",        label: "Stromerzeuger", color: "#ddc94a" },
+  { id: "street_cabinet",   label: "Schaltkästen",  color: "#b08d6b" },
+  { id: "water",            label: "Wasser",        color: "#4ec9b8" },
+  { id: "siren",            label: "Sirenen",       color: "#e0715c" },
+  { id: "charging_station", label: "Ladesäulen",    color: "#3fb27f" },
+  { id: "surveillance",     label: "Kameras",       color: "#c56b7e" },
+  { id: "fuel",             label: "Tankstellen",   color: "#9a7bd0" },
 ];
 
 // Auswahl-/Signalfarbe aus der Dynamic-Color-Engine (primary, dark).
@@ -47,7 +51,9 @@ export const CATEGORY_BY_ID: Record<string, Category> = Object.fromEntries(
 
 // Kategorien, die ohne Untertyp zu grob sind (Ehrlichkeit: ein Kirchturm ist
 // kein Sendemast, eine Ortsnetzstation kein Umspannwerk).
-export const REFINED = new Set(["substation", "tower", "mast"]);
+export const REFINED = new Set([
+  "substation", "tower", "mast", "generator", "street_cabinet", "water",
+]);
 
 // Kuratierte Untertypen: der Ingest normalisiert die Roh-Tags auf diese
 // kanonischen IDs (pipeline/atmros/config.py SUBTYPE_MAP — dort ist die
@@ -73,6 +79,21 @@ const SUBTYPE_LABELS: Record<string, string> = {
   water: "Wassertürme",
   siren: "Sirenen",
   monitoring: "Messmasten",
+  // generator (generator:source)
+  solar: "Solar / PV",
+  wind: "Windkraft",
+  hydro: "Wasserkraft",
+  biomass: "Biomasse",
+  biogas: "Biogas",
+  // street_cabinet
+  power: "Strom",
+  telecom: "Telekommunikation",
+  traffic_control: "Verkehrstechnik",
+  street_lighting: "Straßenbeleuchtung",
+  // water (man_made-Wert der greifenden Regel)
+  water_works: "Wasserwerke",
+  wastewater_plant: "Kläranlagen",
+  water_tower: "Wassertürme",
 };
 
 // Nur kuratierte Untertypen bekommen eine Drilldown-Zeile.
