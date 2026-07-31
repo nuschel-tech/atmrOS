@@ -16,11 +16,36 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
   versionierte PMTiles auf dem CDN (Karten-Traffic am VPS vorbei)
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht
-- Stufe B (externe Register): PEGELONLINE (dl-zero, Live-Pegel), BNetzA-
-  Ladesäulenregister (CC BY 4.0, Cross-Check zu OSM), Marktstammdatenregister
-  (dl-de/by-2-0, täglicher Gesamtdatenexport) — Recherche 31.07., Reihenfolge
-  nach Aufwand/Wert; GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
+- Stufe B, weitere Quellen: BNetzA-Ladesäulenregister (CC BY 4.0, Cross-Check
+  zu OSM; vorher Identitätsbildung klären — Zeilen ohne stabile ID),
+  Marktstammdatenregister (dl-de/by-2-0, täglicher Gesamtdatenexport, der
+  große Brocken); GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
   BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
+
+## [0.14.0] — 2026-07-31
+
+**Stufe B, Quelle 2: PEGELONLINE — die Kette kann jetzt mehrere Quellen.**
+
+### Hinzugefügt
+- Neue Quelle `wsv/pegelonline` (WSV, Lizenz dl-zero-de/2.0):
+  `python -m atmros.pegel` filtert die Stationsliste kuratiert auf Bayern
+  (BBox + Donau/Main ab km ~70/Main-Donau-Kanal, Grenzpegel am bayerischen
+  Ufer inklusive) — 31 Pegel als Objekte `p/<Pegelnummer>` durch dieselbe
+  Kette: Rohlager (eigener Datei-Präfix) → observation → Diff → Tiles
+- Live-Wasserstand im Profiler-Panel: `GET /pegel/{id}/current` als
+  Server-Proxy (5-Min-Cache; keine Nutzer-IPs an Dritte). Messwerte gehen
+  bewusst NICHT ins Archiv — Stammdaten sind Beobachtungen, Pegelstände
+  sind Messungen
+- Legende: PEGELONLINE als zweite Quellen-Kachel mit eigenem Stand
+  (`/stats` liefert `by_source`); Kategorie „Pegel" mit Gewässer-Drilldown
+- Betrieb: `atmros-pegel.service`/`.timer` (täglich), DEPLOY.md-Abschnitt
+
+### Geändert
+- Diff pro Quelle gescoped (`db.write_run`): ein Quelle-2-Lauf sieht nur
+  eigene Objekte — Fundament für alle weiteren Stufe-B-Quellen
+- Kategorien-Grid zeigt nur noch Kategorien der geöffneten Quelle
+- `/object` akzeptiert `p`-Objekte; Deep-Link zeigt für Pegel auf die
+  WSV-Stammdaten; API braucht dafür neu `requests`
 
 ## [0.13.0] — 2026-07-31
 

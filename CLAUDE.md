@@ -103,13 +103,24 @@ Auf der Karte via Vektor-Tiles / Clustering problemlos.
 ```
 → Das ist ein fertiges Profiler-Panel, **kein Feld muss erfunden werden.**
 
-### Zweitquellen (später andocken, Fundament identisch)
-- **Bundesnetzagentur EMF-Standortdatenbank** — Funkanlagen-Standorte mit Karte.
-  Zäher (Kartendienst, keine saubere API), als Anreicherung für Masten.
-- **OpenChargeMap** — Ladesäulen mit Live-Status. Braucht kostenlosen API-Key
-  (`api.openchargemap.io/v3/poi`, ohne Key → HTTP 403). Reichere OSM-Ladesäulen damit an.
+### Zweitquelle 1 (INTEGRIERT seit 0.14.0): PEGELONLINE ✅
+- `python -m atmros.pegel` — REST-API v2 der WSV, kein Key, Lizenz dl-zero-de/2.0.
+  Kuratierter Bayern-Filter (BBox + Donau/Main ab km 70/MDK) → ~31 Pegel als
+  Objekte `osm_type='p'`, `osm_id`=Pegelnummer, Quelle `wsv/pegelonline`.
+- **Nur Stammdaten** gehen in die Beobachtungen; der Live-Wasserstand läuft
+  on demand über den API-Proxy `/pegel/{id}/current` (5-Min-Cache, DSGVO:
+  keine Nutzer-IPs an die WSV). Diff ist pro Quelle gescoped (db.write_run).
+
+### Weitere Zweitquellen (recherchiert 31.07.2026, Reihenfolge nach Wert/Aufwand)
+- **BNetzA-Ladesäulenregister** — CSV/API, CC BY 4.0; als Cross-Check zu den
+  OSM-Ladesäulen (amtliche Zahl neben OSM-Zahl). Achtung: Zeilen ohne stabile
+  ID — Identitätsbildung vor Integration klären (Diff-Rauschen vermeiden).
+- **Marktstammdatenregister (MaStR)** — täglicher Gesamtdatenexport (XML,
+  dl-de/by-2-0), amtliche Erzeugungsanlagen; der große Brocken (mehrere GB).
+- **BNetzA EMF-Standortdatenbank** — weiterhin KEIN offener Bulk-Download;
+  Viewer-API abgreifen wäre wie Overpass-Hämmern → Merkliste.
+- **OpenChargeMap** — Live-Status-Anreicherung, braucht Key, Lizenz-Gemisch.
 - **Overpass API** — nur für Ad-hoc/kleine Abfragen, NICHT für Nightly-Bulk.
-  Endpoint: `https://overpass-api.de/api/interpreter` (POST, `data=` urlencoded).
 
 ---
 
