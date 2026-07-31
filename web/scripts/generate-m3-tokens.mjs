@@ -13,7 +13,7 @@
 //                (Pink -> Blau) — fürs Branding ist vibrant der richtige Modus.
 //   M3_CONTRAST  -1..1 (Default 0)
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,6 +27,7 @@ import {
   SchemeFidelity,
   SchemeTonalSpot,
   SchemeVibrant,
+  TonalPalette,
 } from "@material/material-color-utilities";
 
 // UI-Seed: kräftiges Orange (Infrastruktur/Energie). Das Marken-Pink #e31c8d
@@ -81,30 +82,71 @@ function buildScheme(dark) {
   return out;
 }
 
-// "Heller, freundlicher, leuchtender": Dark-Surfaces einen Tick anheben und
-// wärmer machen (Ton +LIFT, Chroma +CHROMA) — nur Flächenrollen, Akzente und
-// on-*-Farben bleiben spec-konform. Konfigurierbar via M3_SURFACE_LIFT/_CHROMA.
-const SURFACE_LIFT = Number(process.env.M3_SURFACE_LIFT ?? 6);
-const SURFACE_CHROMA = Number(process.env.M3_SURFACE_CHROMA ?? 6);
-const LIFT_ROLES = [
-  "background", "surface", "surfaceDim", "surfaceBright", "surfaceVariant",
-  "surfaceContainerLowest", "surfaceContainerLow", "surfaceContainer",
-  "surfaceContainerHigh", "surfaceContainerHighest",
-];
+// "Ember-Modus": Dark-Surfaces kommen direkt aus der SEED-Tonpalette mit
+// hoher Chroma — dunkles Orange mit wenig Chroma wäre Braun; erst kräftige
+// Chroma bei mittleren Tönen liest sich als Orange. Nur Flächenrollen;
+// Akzente und on-*-Farben bleiben spec-konform (Kontrast: on-surface Ton 90+
+// gegen Flächen Ton <= 40). M3_SURFACE_MODE=spec schaltet zurück auf Stock.
+const SURFACE_MODE = (process.env.M3_SURFACE_MODE ?? "ember").toLowerCase();
+const SURFACE_CHROMA = Number(process.env.M3_SURFACE_CHROMA ?? 30);
+const TONE_SHIFT = Number(process.env.M3_SURFACE_TONE_SHIFT ?? 0);
 
-function liftHex(hex) {
-  const h = Hct.fromInt(argbFromHex(hex));
-  h.tone = Math.min(98, h.tone + SURFACE_LIFT);
-  h.chroma = h.chroma + SURFACE_CHROMA;
-  return hexFromArgb(h.toInt());
-}
+// Tonstufen der Flächenrollen im Ember-Modus (M3-Ordnung bleibt erhalten).
+const EMBER_TONES = {
+  surfaceContainerLowest: 15,
+  surfaceDim: 19,
+  surface: 19,
+  background: 19,
+  surfaceContainerLow: 24,
+  surfaceContainer: 27,
+  surfaceContainerHigh: 32,
+  surfaceContainerHighest: 37,
+  surfaceBright: 46,
+  surfaceVariant: 40,
+};
 
 const dark = buildScheme(true);
 const light = buildScheme(false);
-if (SURFACE_LIFT || SURFACE_CHROMA) {
-  for (const role of LIFT_ROLES) {
-    if (dark[role]) dark[role] = liftHex(dark[role]); // nur Dark anheben
+
+if (SURFACE_MODE === "ember") {
+  const seedHue = Hct.fromInt(argbFromHex(SEED)).hue;
+  const pal = TonalPalette.fromHueAndChroma(seedHue, SURFACE_CHROMA);
+  for (const [role, tone] of Object.entries(EMBER_TONES)) {
+    dark[role] = hexFromArgb(pal.tone(Math.max(0, Math.min(98, tone + TONE_SHIFT))));
   }
+}
+
+// --- Basemap synchron halten: style.json-Farben aus derselben Palette -------
+// (verhindert, dass Karte und UI je wieder auseinanderlaufen)
+function syncBasemap() {
+  const stylePath = join(root, "public/basemap/style.json");
+  let style;
+  try {
+    style = JSON.parse(readFileSync(stylePath, "utf8"));
+  } catch {
+    return console.warn("basemap: style.json nicht gefunden/lesbar — übersprungen");
+  }
+  const seedHue = Hct.fromInt(argbFromHex(SEED)).hue;
+  const pal = TonalPalette.fromHueAndChroma(seedHue, SURFACE_CHROMA);
+  const waterPal = TonalPalette.fromHueAndChroma(285, 14); // dunkles Violett = Wasser
+  const t = (tone) => hexFromArgb(pal.tone(tone));
+  const patch = {
+    background: { "background-color": t(15) },
+    earth: { "fill-color": t(19) },
+    landuse: { "fill-color": t(24) },
+    water: { "fill-color": hexFromArgb(waterPal.tone(16)) },
+    buildings: { "fill-color": t(32) },
+    roads_minor: { "line-color": t(30) },
+    roads_major: { "line-color": t(37) },
+    roads_highway: { "line-color": t(45) },
+    boundaries: { "line-color": t(45) },
+    places_locality: { "text-color": t(80), "text-halo-color": t(19) },
+  };
+  for (const layer of style.layers) {
+    if (patch[layer.id]) Object.assign((layer.paint ??= {}), patch[layer.id]);
+  }
+  writeFileSync(stylePath, JSON.stringify(style, null, 2) + "\n");
+  console.log("basemap: style.json aus derselben Palette synchronisiert");
 }
 
 const header =
@@ -133,5 +175,7 @@ mkdirSync(join(root, "src/lib"), { recursive: true });
 writeFileSync(join(root, "src/styles/m3-color.generated.css"), css);
 writeFileSync(join(root, "src/lib/m3-color.generated.ts"), ts);
 
-console.log(`m3-tokens: ${Object.keys(dark).length} Rollen · Seed ${SEED} · ${SCHEME}`);
-console.log(`  primary(dark)=${dark.primary}  surface(dark)=${dark.surface}`);
+console.log(`m3-tokens: ${Object.keys(dark).length} Rollen · Seed ${SEED} · ${SCHEME} · Flächen ${SURFACE_MODE}`);
+console.log(`  primary(dark)=${dark.primary}  surface(dark)=${dark.surface}  container-high=${dark.surfaceContainerHigh}`);
+
+syncBasemap();

@@ -14,7 +14,7 @@
       "id": "background",
       "type": "background",
       "paint": {
-        "background-color": "#2c160e"
+        "background-color": "#43190b"
       }
     },
     {
@@ -23,7 +23,7 @@
       "source": "protomaps",
       "source-layer": "earth",
       "paint": {
-        "fill-color": "#321913"
+        "fill-color": "#4e2112"
       }
     },
     {
@@ -33,7 +33,7 @@
       "source-layer": "landuse",
       "minzoom": 8,
       "paint": {
-        "fill-color": "#3b211a",
+        "fill-color": "#5c2b1c",
         "fill-opacity": 0.5
       }
     },
@@ -43,7 +43,7 @@
       "source": "protomaps",
       "source-layer": "water",
       "paint": {
-        "fill-color": "#221a26"
+        "fill-color": "#262636"
       }
     },
     {
@@ -53,7 +53,7 @@
       "source-layer": "buildings",
       "minzoom": 13,
       "paint": {
-        "fill-color": "#4c3027",
+        "fill-color": "#723d2c",
         "fill-opacity": 0.6
       }
     },
@@ -83,7 +83,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#44291f",
+        "line-color": "#6c3828",
         "line-width": [
           "interpolate",
           [
@@ -123,7 +123,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#53342a",
+        "line-color": "#804837",
         "line-width": [
           "interpolate",
           [
@@ -159,7 +159,7 @@
         "line-join": "round"
       },
       "paint": {
-        "line-color": "#64443a",
+        "line-color": "#975b49",
         "line-width": [
           "interpolate",
           [
@@ -183,7 +183,7 @@
       "source": "protomaps",
       "source-layer": "boundaries",
       "paint": {
-        "line-color": "#6f4d41",
+        "line-color": "#975b49",
         "line-dasharray": [
           2,
           2
@@ -249,8 +249,8 @@
         "text-letter-spacing": 0.05
       },
       "paint": {
-        "text-color": "#cbaba0",
-        "text-halo-color": "#321913",
+        "text-color": "#ffb59e",
+        "text-halo-color": "#4e2112",
         "text-halo-width": 1.2
       }
     }

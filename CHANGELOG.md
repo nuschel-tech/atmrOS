@@ -17,6 +17,19 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.7.2] — 2026-07-31
+
+**Ember statt Braun.**
+
+### Geändert
+- Flächenfarben kommen jetzt direkt aus der Orange-Tonpalette mit hoher Chroma
+  („Ember-Modus", Default; `M3_SURFACE_MODE=spec` schaltet zurück) — dunkles
+  Orange mit wenig Chroma las sich als Braun, erst kräftige Chroma bei
+  mittleren Tönen wirkt orange. Surfaces: Glut-Orange bis Rost/Terrakotta.
+- Basemap wird vom Token-Generator automatisch mitsynchronisiert
+  (`npm run tokens` patcht style.json aus derselben Palette) — Karte und UI
+  können nicht mehr auseinanderlaufen.
+
 ## [0.7.1] — 2026-07-30
 
 **Heller, freundlicher, leuchtender.**
