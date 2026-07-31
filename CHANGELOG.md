@@ -22,6 +22,18 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
   große Brocken); GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
   BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
 
+## [0.16.0] — 2026-07-31
+
+**Einstiegsmoment: System online.**
+
+### Geändert
+- Boot erzählt jetzt in drei Schlägen: Marke → Statement („Die
+  Infrastruktur Bayerns. Eine Ebene. Mit Gedächtnis.") → Quellen-Status
+  („2 Quellen online · 145.035 Objekte"), sobald `/stats` antwortet
+- Danach Kamerafahrt: Start in der Bayern-Übersicht, sanfter Flug auf
+  die Arbeits-Zoomstufe (reduced-motion: direkter Sprung)
+- Hartes Boot-Timeout bleibt (jetzt 3 s) — der Einstieg blockiert nie
+
 ## [0.15.0] — 2026-07-31
 
 **Karten-Dramaturgie: die Infrastruktur leuchtet.**
