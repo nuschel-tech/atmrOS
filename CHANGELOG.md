@@ -17,6 +17,20 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
 - Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
 
+## [0.8.0] — 2026-07-31
+
+**Neues Farbschema: leuchtendes Cyan.**
+
+### Geändert
+- UI-Seed von Orange auf Cyan `#00bcd4`: kühle Töne bleiben auch auf dunklen
+  Flächen als Farbe erkennbar (dunkles Orange = zwangsläufig Braun/Rost) —
+  primary jetzt elektrisches `#00daf5`, Flächen tiefes Petrol-Glühen statt
+  Terrakotta. Das Marken-Pink bleibt exklusives Änderungs-Signal und hat auf
+  Cyan maximalen Komplementär-Pop.
+- Kategoriefarbe Türme von Teal auf Amber (Teal kollidierte mit dem Cyan-UI;
+  Orange/Amber ist durch den Seed-Wechsel wieder frei)
+- Basemap automatisch mitsynchronisiert (Petrol-Familie, Wasser dunkles Violett)
+
 ## [0.7.2] — 2026-07-31
 
 **Ember statt Braun.**

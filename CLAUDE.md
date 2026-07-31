@@ -168,7 +168,7 @@ Open Source (Apache-2.0), keine Lizenzrisiken. Die frühere Watch-Dogs/ctOS-
 Ästhetik ist **verworfen** (Trade-Dress-/Lizenzbedenken, nicht integrierbar).
 Frühere Sessions-Notizen zu Terminal-Optik/Switzer/Squircle gelten NICHT mehr.
 
-- **Farben: Dynamic Color.** Schemes werden aus dem UI-Seed **Orange `#ff4d00`**
+- **Farben: Dynamic Color.** Schemes werden aus dem UI-Seed **Cyan `#00bcd4`**
   **generiert** (`@material/material-color-utilities`, HCT, Scheme vibrant),
   nicht handgepickt. Es gelten die M3-Farbrollen (primary/secondary/tertiary/
   surface-Stufen …). Dark ist Default; Light-Scheme wird miterzeugt.

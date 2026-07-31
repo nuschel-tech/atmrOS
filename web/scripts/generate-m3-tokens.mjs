@@ -30,10 +30,12 @@ import {
   TonalPalette,
 } from "@material/material-color-utilities";
 
-// UI-Seed: kräftiges Orange (Infrastruktur/Energie). Das Marken-Pink #e31c8d
-// ist bewusst NICHT mehr der UI-Seed — es lebt als exklusive Signalfarbe für
-// Änderungs-Ereignisse weiter (siehe m3.css --atmr-signal-*).
-const SEED = process.env.M3_SEED ?? "#ff4d00";
+// UI-Seed: leuchtendes Cyan. Kühle Töne bleiben auch auf dunklen Flächen als
+// Farbe erkennbar (dunkles Orange dagegen = Braun/Rost) — deshalb liest sich
+// dieses Scheme "leuchtend". Das Marken-Pink #e31c8d ist bewusst NICHT der
+// UI-Seed — es ist die exklusive Signalfarbe für Änderungs-Ereignisse und hat
+// auf Cyan maximalen Komplementär-Pop (siehe m3.css --atmr-signal-*).
+const SEED = process.env.M3_SEED ?? "#00bcd4";
 const SCHEME = (process.env.M3_SCHEME ?? "vibrant").toLowerCase();
 const CONTRAST = Number(process.env.M3_CONTRAST ?? 0);
 

@@ -159,7 +159,7 @@ Coming-soon-Seite und unter `GET /health`.
 
 Eine Fähigkeit von **MultaEnhavo**. Design: **Material 3 Expressive** — das
 Signature-Design der MultaEnhavo-Entwicklung. Dynamic Color aus dem UI-Seed
-Orange `#ff4d00`, Roboto (self-hosted), Dark-First. Das Marken-Pink `#e31c8d`
+Cyan `#00bcd4`, Roboto (self-hosted), Dark-First. Das Marken-Pink `#e31c8d`
 ist exklusiv das Änderungs-Signal (NEU/GEÄNDERT).
 
 **Lizenz:** Geodaten © OpenStreetMap-Mitwirkende (ODbL). Der Projektcode steht

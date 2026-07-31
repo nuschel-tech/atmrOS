@@ -18,7 +18,7 @@ export interface Category {
 
 export const CATEGORIES: Category[] = [
   { id: "mast",             label: "Sendemast",         color: "#4b9fd4" },
-  { id: "tower",            label: "Turm",              color: "#5bc0be" },
+  { id: "tower",            label: "Turm",              color: "#e5a44e" },
   { id: "power_tower",      label: "Strommast",         color: "#8a8f98" },
   { id: "substation",       label: "Umspannwerk",       color: "#b3c94f" },
   { id: "charging_station", label: "Ladesäule",         color: "#3fb27f" },
