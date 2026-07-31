@@ -461,132 +461,173 @@ async function fetchStats(): Promise<StatsResponse | null> {
   }
 }
 
+// Kategorien als M3-Filter-Chips; Untertypen (Ehrlichkeits-Feature) öffnen
+// über den Expand-Punkt am Chip ein Popover über dem Chip-Feld.
+let activePopCat: string | null = null;
+
+const de = (n: number): string => n.toLocaleString("de-DE");
+
 function buildLegend(stats: StatsResponse): void {
   const host = document.getElementById("legend-body");
   if (!host) return;
-  const de = (n: number): string => n.toLocaleString("de-DE");
-  const groups: string[] = [];
+  const chips: string[] = [];
 
   for (const c of CATEGORIES) {
     const total = stats.by_category[c.id] ?? 0;
     const subs = REFINED.has(c.id) ? stats.by_subtype?.[c.id] : undefined;
     const hasSubs = !!subs && Object.keys(subs).length > 0;
+    const off = hiddenCategories.has(c.id);
+    const delay = CATEGORIES.indexOf(c) * 40;
 
-    // Untertypen stecken hinter einem Pfeil (eingeklappt) — nur die zu groben
-    // Kategorien haben welche. Echte Daten haben einen langen Freitext-Schwanz
-    // (tower: ~74 Werte) -> Top-8 + Sammelzeile "andere".
-    let subsHtml = "";
-    if (subs) {
-      const ordered = Object.entries(subs).sort((a, b) => b[1] - a[1]);
-      const TOP = 8;
-      const rows: string[] = [];
-      for (const [sub, n] of ordered.slice(0, TOP)) {
-        const label = sub === NO_SUBTYPE ? NO_SUBTYPE : subtypeLabel(sub);
-        rows.push(
-          `<div class="lg-sub" data-cat="${c.id}" data-sub="${escapeAttr(sub)}" role="button" tabindex="0">
-             <span class="lbl">${escapeHtml(label)}</span>
-             <span class="count">${de(n)}</span>
-           </div>`,
-        );
-      }
-      const rest = ordered.slice(TOP);
-      if (rest.length) {
-        const restVals = JSON.stringify(rest.map(([s]) => s));
-        const restCount = rest.reduce((acc, [, n]) => acc + n, 0);
-        rows.push(
-          `<div class="lg-sub lg-rest" data-cat="${c.id}" data-subs="${escapeAttr(restVals)}" role="button" tabindex="0">
-             <span class="lbl">andere (${rest.length} Typen)</span>
-             <span class="count">${de(restCount)}</span>
-           </div>`,
-        );
-      }
-      subsHtml = `<div class="lg-subs" hidden>${rows.join("")}</div>`;
-    }
-
-    const arrow = hasSubs
-      ? `<span class="lg-arrow" role="button" tabindex="0" aria-label="Untertypen ein-/ausklappen" aria-expanded="false">` +
-        `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">` +
-        `<path d="M9.3 6.7a1 1 0 0 1 1.4-1.4l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4-1.4L14.6 12z"/></svg></span>`
+    const expand = hasSubs
+      ? `<span class="chip-expand" role="button" tabindex="0" data-expand="${c.id}" ` +
+        `aria-label="Untertypen von ${c.label}">` +
+        `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">` +
+        `<path d="M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"/></svg></span>`
       : "";
 
-    const delay = CATEGORIES.indexOf(c) * 45;
-    groups.push(
-      `<div class="lg-group m3e-pop" style="--m3e-delay:${delay}ms" data-cat="${c.id}">
-         <div class="lg-cat" data-cat="${c.id}" role="button" tabindex="0" aria-pressed="true">
-           <span class="dot" style="background:${c.color}"></span>
-           <span class="lbl">${c.label}</span>
-           <span class="count">${de(total)}</span>
-           ${arrow}
-         </div>
-         ${subsHtml}
+    chips.push(
+      `<div class="cat-chip${off ? " off" : ""} m3e-pop" style="--m3e-delay:${delay}ms" ` +
+      `role="button" tabindex="0" aria-pressed="${!off}" data-cat="${c.id}">` +
+      `<span class="dot" style="background:${c.color}"></span>` +
+      `<span class="lbl">${c.label}</span>` +
+      `<span class="count">${de(total)}</span>${expand}</div>`,
+    );
+  }
+  host.innerHTML = chips.join("");
+  // Offenes Popover mit frischen Zahlen neu aufbauen (z.B. nach Daten-Update).
+  if (activePopCat) renderSubsPopover(activePopCat);
+}
+
+// --- Untertypen-Popover ------------------------------------------------------
+function renderSubsPopover(catId: string): void {
+  const pop = document.getElementById("subs-pop");
+  const list = document.getElementById("subs-list");
+  const title = document.getElementById("subs-title");
+  const dot = document.getElementById("subs-dot");
+  const subs = latestStats?.by_subtype?.[catId];
+  const cat = CATEGORY_BY_ID[catId];
+  if (!pop || !list || !title || !dot || !subs || !cat) return;
+
+  title.textContent = cat.label;
+  (dot as HTMLElement).style.background = cat.color;
+
+  // Langer Freitext-Schwanz (tower: ~74 Werte) -> Top-8 + Sammelzeile "andere".
+  const ordered = Object.entries(subs).sort((a, b) => b[1] - a[1]);
+  const TOP = 8;
+  const rows: string[] = [];
+  for (const [sub, n] of ordered.slice(0, TOP)) {
+    const label = sub === NO_SUBTYPE ? NO_SUBTYPE : subtypeLabel(sub);
+    const off = hiddenSubtypes.has(subKey(catId, sub));
+    rows.push(
+      `<div class="lg-sub${off ? " off" : ""}" data-cat="${catId}" data-sub="${escapeAttr(sub)}" role="button" tabindex="0">
+         <span class="lbl">${escapeHtml(label)}</span>
+         <span class="count">${de(n)}</span>
        </div>`,
     );
   }
-  host.innerHTML = groups.join("");
+  const rest = ordered.slice(TOP);
+  if (rest.length) {
+    const keys = rest.map(([s]) => subKey(catId, s));
+    const off = keys.every((k) => hiddenSubtypes.has(k));
+    const restCount = rest.reduce((acc, [, n]) => acc + n, 0);
+    rows.push(
+      `<div class="lg-sub lg-rest${off ? " off" : ""}" data-cat="${catId}" data-subs="${escapeAttr(JSON.stringify(rest.map(([s]) => s)))}" role="button" tabindex="0">
+         <span class="lbl">andere (${rest.length} Typen)</span>
+         <span class="count">${de(restCount)}</span>
+       </div>`,
+    );
+  }
+  list.innerHTML = rows.join("");
+  pop.classList.toggle("cat-off", hiddenCategories.has(catId));
+  pop.removeAttribute("hidden");
+  activePopCat = catId;
+}
+
+function closeSubsPopover(): void {
+  document.getElementById("subs-pop")?.setAttribute("hidden", "");
+  activePopCat = null;
+}
+
+function chipOf(catId: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`.cat-chip[data-cat="${catId}"]`);
 }
 
 function wireLegend(): void {
   const host = document.getElementById("legend-body");
-  if (!host) return;
-  const onActivate = (target: HTMLElement): void => {
-    // 1) Pfeil: nur auf-/zuklappen, Kategorie NICHT umschalten.
-    const arrow = target.closest<HTMLElement>(".lg-arrow");
-    if (arrow) {
-      toggleExpand(arrow);
+  const list = document.getElementById("subs-list");
+  if (!host || !list) return;
+
+  const onChipArea = (target: HTMLElement): void => {
+    // 1) Expand-Punkt: Popover auf/zu — Kategorie NICHT umschalten.
+    const expand = target.closest<HTMLElement>("[data-expand]");
+    if (expand) {
+      const cat = expand.dataset.expand!;
+      if (activePopCat === cat) closeSubsPopover();
+      else renderSubsPopover(cat);
       return;
     }
-    // 2) Untertyp-Zeile.
-    const subRow = target.closest<HTMLElement>(".lg-sub");
-    if (subRow) {
-      const group = subRow.closest<HTMLElement>(".lg-group");
-      const cat = subRow.dataset.cat!;
-      if (group?.classList.contains("cat-off")) {
-        // Hauptkategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder
-        // an, aber NUR dieser Untertyp sichtbar, alle anderen aus.
-        isolateSubtype(group, cat, subRow);
-      } else if (subRow.dataset.subs) {
-        // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
-        const vals = JSON.parse(subRow.dataset.subs) as string[];
-        const turningOff = !subRow.classList.contains("off");
-        for (const v of vals) {
-          const key = subKey(cat, v);
-          if (turningOff) hiddenSubtypes.add(key);
-          else hiddenSubtypes.delete(key);
-        }
-        subRow.classList.toggle("off", turningOff);
-      } else {
-        toggle(hiddenSubtypes, subKey(cat, subRow.dataset.sub!), subRow);
-      }
-      applyFilters();
-      return;
-    }
-    // 3) Kategorie-Zeile: umschalten; alle Untertypen durchstreichen, wenn aus.
-    const catRow = target.closest<HTMLElement>(".lg-cat");
-    if (catRow) {
-      const cat = catRow.dataset.cat!;
-      toggle(hiddenCategories, cat, catRow);
+    // 2) Chip: Kategorie umschalten (Popover-Zustand spiegeln).
+    const chip = target.closest<HTMLElement>(".cat-chip");
+    if (chip) {
+      const cat = chip.dataset.cat!;
+      toggle(hiddenCategories, cat, chip);
       const off = hiddenCategories.has(cat);
-      catRow.setAttribute("aria-pressed", String(!off));
-      catRow.closest<HTMLElement>(".lg-group")?.classList.toggle("cat-off", off);
+      chip.setAttribute("aria-pressed", String(!off));
+      if (activePopCat === cat) {
+        document.getElementById("subs-pop")?.classList.toggle("cat-off", off);
+      }
       applyFilters();
     }
   };
-  host.addEventListener("click", (e) => onActivate(e.target as HTMLElement));
-  host.addEventListener("keydown", (e) => {
+
+  const onSubRow = (target: HTMLElement): void => {
+    const row = target.closest<HTMLElement>(".lg-sub");
+    if (!row) return;
+    const cat = row.dataset.cat!;
+    if (hiddenCategories.has(cat)) {
+      // Kategorie ist aus -> diesen Untertyp isolieren: Kategorie wieder an,
+      // NUR die geklickte Zeile sichtbar, alle anderen aus.
+      hiddenCategories.delete(cat);
+      const chip = chipOf(cat);
+      chip?.classList.remove("off");
+      chip?.setAttribute("aria-pressed", "true");
+      document.getElementById("subs-pop")?.classList.remove("cat-off");
+      for (const r of document.querySelectorAll<HTMLElement>("#subs-list .lg-sub")) {
+        const isClicked = r === row;
+        for (const key of subKeysOf(r, cat)) {
+          if (isClicked) hiddenSubtypes.delete(key);
+          else hiddenSubtypes.add(key);
+        }
+        r.classList.toggle("off", !isClicked);
+      }
+    } else if (row.dataset.subs) {
+      // Sammelzeile "andere": alle Rest-Untertypen gemeinsam schalten.
+      const vals = JSON.parse(row.dataset.subs) as string[];
+      const turningOff = !row.classList.contains("off");
+      for (const v of vals) {
+        const key = subKey(cat, v);
+        if (turningOff) hiddenSubtypes.add(key);
+        else hiddenSubtypes.delete(key);
+      }
+      row.classList.toggle("off", turningOff);
+    } else {
+      toggle(hiddenSubtypes, subKey(cat, row.dataset.sub!), row);
+    }
+    applyFilters();
+  };
+
+  const keyable = (handler: (t: HTMLElement) => void) => (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onActivate(e.target as HTMLElement);
+      handler(e.target as HTMLElement);
     }
-  });
-}
-
-function toggleExpand(arrow: HTMLElement): void {
-  const subs = arrow.closest<HTMLElement>(".lg-group")?.querySelector<HTMLElement>(".lg-subs");
-  if (!subs) return;
-  const collapsed = subs.hasAttribute("hidden");
-  subs.toggleAttribute("hidden", !collapsed);
-  // Chevron-Rotation macht das CSS über [aria-expanded] (Spring-Easing).
-  arrow.setAttribute("aria-expanded", String(collapsed));
+  };
+  host.addEventListener("click", (e) => onChipArea(e.target as HTMLElement));
+  host.addEventListener("keydown", keyable(onChipArea));
+  list.addEventListener("click", (e) => onSubRow(e.target as HTMLElement));
+  list.addEventListener("keydown", keyable(onSubRow));
+  document.getElementById("subs-close")?.addEventListener("click", closeSubsPopover);
 }
 
 // Komposit-Schlüssel einer Untertyp-Zeile (Einzeltyp oder Sammelzeile "andere").
@@ -595,26 +636,6 @@ function subKeysOf(row: HTMLElement, cat: string): string[] {
     return (JSON.parse(row.dataset.subs) as string[]).map((v) => subKey(cat, v));
   }
   return [subKey(cat, row.dataset.sub!)];
-}
-
-// Aus dem "Kategorie-aus"-Zustand heraus genau einen Untertyp aktivieren:
-// Kategorie wieder an, nur die geklickte Zeile sichtbar, alle anderen aus.
-function isolateSubtype(group: HTMLElement, cat: string, clicked: HTMLElement): void {
-  hiddenCategories.delete(cat);
-  group.classList.remove("cat-off");
-  const catRow = group.querySelector<HTMLElement>(".lg-cat");
-  if (catRow) {
-    catRow.classList.remove("off");
-    catRow.setAttribute("aria-pressed", "true");
-  }
-  for (const row of group.querySelectorAll<HTMLElement>(".lg-sub")) {
-    const isClicked = row === clicked;
-    for (const key of subKeysOf(row, cat)) {
-      if (isClicked) hiddenSubtypes.delete(key);
-      else hiddenSubtypes.add(key);
-    }
-    row.classList.toggle("off", !isClicked);
-  }
 }
 
 function toggle(set: Set<string>, key: string, row: HTMLElement): void {

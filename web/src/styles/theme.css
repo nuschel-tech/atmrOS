@@ -175,85 +175,95 @@ html, body {
 .chg-cat { color: var(--md-sys-color-on-surface); font: var(--md-type-body); }
 .chg-when { color: var(--md-sys-color-on-surface-variant); font: var(--md-type-data); font-size: 11px; }
 
-/* --- Legende: warme Tonal-Card mit Filterliste ----------------------------- */
+/* --- Kategorien: Filter-Chip-Feld (warme Tonal-Card) ----------------------- */
 .legend {
   position: absolute; bottom: 14px; left: 14px; z-index: 5;
-  padding: 16px 13px 13px 15px;
+  padding: 12px;
   background: color-mix(in srgb,
     var(--md-sys-color-primary-container) 12%,
     color-mix(in srgb, var(--md-sys-color-surface-container-high) 93%, transparent));
-  border-radius: var(--md-shape-xl);
+  border-radius: var(--md-shape-l);
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  min-width: 245px;
+  max-width: min(400px, calc(100vw - 28px));
   animation: m3e-pop var(--md-duration-long) var(--md-motion-spring) 80ms both;
 }
-.legend h4 {
-  margin: 0 0 10px 6px; font: var(--md-type-label);
-  text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--md-sys-color-on-surface-variant);
-}
-#legend-body { max-height: min(56vh, 460px); overflow-y: auto; padding-right: 2px; }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .lg-hint { color: var(--md-sys-color-on-surface-variant); font: var(--md-type-label-small); }
-.legend .dot {
-  width: 12px; height: 12px; border-radius: var(--md-shape-xs); flex: 0 0 auto;
-  transition: border-radius var(--md-duration-medium) var(--md-motion-spring),
-              transform var(--md-duration-medium) var(--md-motion-spring);
+
+/* M3 Filter-Chip: an = tonal gefüllt, aus = Outline + durchgestrichen. */
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 10px 7px 12px; border-radius: var(--md-shape-s);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  border: 1px solid transparent;
+  font: var(--md-type-label); cursor: pointer; user-select: none;
+  transition: background var(--md-duration-short) var(--md-motion-standard),
+              transform var(--md-duration-short) var(--md-motion-spring);
 }
-.lg-cat:hover .dot { border-radius: 50%; transform: scale(1.15); } /* Shape-Morph */
-.legend .count {
+.cat-chip:hover { filter: brightness(1.08); transform: scale(1.03); }
+.cat-chip .dot {
+  width: 10px; height: 10px; border-radius: 3px; flex: 0 0 auto;
+  transition: border-radius var(--md-duration-medium) var(--md-motion-spring);
+}
+.cat-chip:hover .dot { border-radius: 50%; } /* Shape-Morph */
+.cat-chip .count { font: var(--md-type-label-small); opacity: 0.7; }
+.cat-chip.off {
+  background: transparent;
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: line-through; opacity: 0.75;
+}
+.cat-chip .chip-expand {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: var(--md-shape-full);
+  margin: -2px -3px -2px 0;
+}
+.cat-chip .chip-expand:hover {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/* --- Untertypen-Popover (öffnet über dem Chip-Feld) ------------------------ */
+.subs-pop {
+  position: absolute; bottom: calc(100% + 10px); left: 0; z-index: 6;
+  width: min(290px, calc(100vw - 28px));
+  background: var(--md-sys-color-surface-container-high);
+  border-radius: var(--md-shape-l);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  padding: 10px 10px 12px;
+  animation: m3e-pop var(--md-duration-medium) var(--md-motion-spring) both;
+}
+.subs-pop[hidden] { display: none; }
+.subs-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 2px 4px 6px 7px; font: var(--md-type-label);
+  color: var(--md-sys-color-on-surface);
+}
+.subs-head .dot { width: 10px; height: 10px; border-radius: 3px; }
+.subs-head md-icon-button {
   margin-left: auto;
-  background: var(--md-sys-color-surface-container-highest);
+  --md-icon-button-icon-size: 16px;
+  --md-icon-button-state-layer-width: 30px;
+  --md-icon-button-state-layer-height: 30px;
   color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-type-label-small); padding: 2px 9px;
-  border-radius: var(--md-shape-full);
 }
-
-.lg-group { margin-bottom: 2px; }
-
-.lg-cat {
-  display: flex; align-items: center; gap: 10px; padding: 7px 7px 7px 10px;
-  border-radius: var(--md-shape-full); cursor: pointer; user-select: none;
-  font: var(--md-type-body-large);
-}
-.lg-cat:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
-
-.lg-arrow {
-  flex: 0 0 auto; width: 26px; height: 26px; margin-left: 2px;
-  display: flex; align-items: center; justify-content: center; cursor: pointer;
-  color: var(--md-sys-color-on-surface-variant);
-  background: var(--md-sys-color-surface-container-highest);
-  border-radius: var(--md-shape-full);
-  transition: background var(--md-duration-short) var(--md-motion-standard);
-}
-.lg-arrow svg {
-  transition: transform var(--md-duration-medium) var(--md-motion-spring);
-}
-.lg-arrow:hover {
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
-}
-.lg-arrow[aria-expanded="true"] {
-  color: var(--md-sys-color-on-primary-container);
-  background: var(--md-sys-color-primary-container);
-}
-.lg-arrow[aria-expanded="true"] svg { transform: rotate(90deg); }
-
-.lg-subs { margin: 1px 0 6px; }
 
 .lg-sub {
-  display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 30px;
+  display: flex; align-items: center; gap: 8px; padding: 5px 8px;
   border-radius: var(--md-shape-full); cursor: pointer; user-select: none;
   font: var(--md-type-label); font-weight: 400;
   color: var(--md-sys-color-on-surface-variant);
 }
 .lg-sub:hover { background: var(--md-sys-color-surface-container-highest); }
+.lg-sub .count { margin-left: auto; font: var(--md-type-label-small); opacity: 0.7; }
 
 /* Ausgeblendet: gedämpft + durchgestrichen — sichtbar, nicht verschwunden. */
-.lg-cat.off, .lg-sub.off { opacity: 0.38; text-decoration: line-through; }
-.lg-group.cat-off .lg-sub { opacity: 0.38; text-decoration: line-through; }
-.lg-group.cat-off .lg-sub:hover { opacity: 0.7; }
-.lg-cat:focus-visible, .lg-sub:focus-visible, .lg-arrow:focus-visible {
+.lg-sub.off { opacity: 0.38; text-decoration: line-through; }
+/* Kategorie aus -> alle Untertypen durchgestrichen (Klick isoliert). */
+.subs-pop.cat-off .lg-sub { opacity: 0.38; text-decoration: line-through; }
+.subs-pop.cat-off .lg-sub:hover { opacity: 0.7; }
+.cat-chip:focus-visible, .lg-sub:focus-visible, .chip-expand:focus-visible {
   outline: 2px solid var(--md-sys-color-primary); outline-offset: 1px;
 }
 

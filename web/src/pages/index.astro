@@ -50,8 +50,18 @@ const VERSION = pkg.version;
     </section>
 
     <aside class="legend">
-      <h4>Ebene · Filter</h4>
-      <div id="legend-body"><div class="lg-hint">// lade Zähler …</div></div>
+      <div id="legend-body" class="cat-chips"><div class="lg-hint">// lade Zähler …</div></div>
+      <!-- Untertypen-Popover (öffnet über dem Chip-Feld) -->
+      <div id="subs-pop" class="subs-pop" hidden>
+        <div class="subs-head">
+          <span id="subs-dot" class="dot"></span>
+          <span id="subs-title" class="subs-title"></span>
+          <md-icon-button id="subs-close" aria-label="Schließen">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+          </md-icon-button>
+        </div>
+        <div id="subs-list" class="subs-list"></div>
+      </div>
     </aside>
 
     <section id="panel" class="panel" aria-live="polite">
