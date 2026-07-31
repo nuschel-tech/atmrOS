@@ -15,7 +15,34 @@ mit `node scripts/bump-version.mjs <version>` (hält `VERSION`,
 - Tiefere BunnyCDN-Einbindung: Full-Site-Pull-Zone; Infra-Daten als
   versionierte PMTiles auf dem CDN (Karten-Traffic am VPS vorbei)
 - Light Mode (heller Basemap-Style) + optionaler Theme-Picker
-- Archiv-/Zeitreise-Ansicht, Zweitquellen (BNetzA-EMF, OpenChargeMap)
+- Archiv-/Zeitreise-Ansicht
+- Stufe B (externe Register): PEGELONLINE (dl-zero, Live-Pegel), BNetzA-
+  Ladesäulenregister (CC BY 4.0, Cross-Check zu OSM), Marktstammdatenregister
+  (dl-de/by-2-0, täglicher Gesamtdatenexport) — Recherche 31.07., Reihenfolge
+  nach Aufwand/Wert; GKD Bayern (CC BY-**SA**!), DWD, Energie-Atlas dahinter.
+  BNetzA-EMF weiter ohne offenen Bulk-Download -> Merkliste
+
+## [0.12.0] — 2026-07-31
+
+**Stufe A: vier neue Ebenen aus dem Bayern-PBF.**
+
+### Hinzugefügt
+- Neue Kategorien aus derselben Quelle (null neue Abhängigkeiten, real
+  gezählt im vollen Dry-Run — jetzt 145.035 Objekte statt 94.780):
+  - **Stromerzeuger** (`power=generator`, ~28.800): Solar/PV 25.697 ·
+    Windkraft 1.292 · Wasserkraft 762 · Biomasse 554 · Biogas 270
+  - **Schaltkästen** (`man_made=street_cabinet`, ~16.400): Strom · Telekom ·
+    Verkehrstechnik · Straßenbeleuchtung
+  - **Wasser** (`water_works`/`wastewater_plant`/`water_tower`, ~3.900):
+    Kläranlagen 2.497 · Wasserwerke 1.134 · Wassertürme 247
+  - **Sirenen** (`emergency=siren`, 1.198)
+- Alle vier mit kuratierten Untertypen von Anfang an (Taxonomie wie 0.11.0)
+
+### Geändert
+- Funktion-vor-Bauform konsequent: `power=generator` und `emergency=siren`
+  greifen vor `man_made=mast`/`tower` (Windrad = Erzeuger, Sirenenmast =
+  Sirene); Schaltkästen mit `power=substation` zählen als Umspannwerke
+- Untertyp-Quelle deklarativ (`SUBTYPE_KEY`), Kategorien-Liste dedupliziert
 
 ## [0.11.0] — 2026-07-31
 

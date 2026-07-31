@@ -81,6 +81,10 @@ Ein Datenmodell, drei Ansichten. Kein zweites System für "Archiv".
 | Ladesäulen | `amenity=charging_station` | Tausende |
 | Überwachungskameras | `man_made=surveillance` | Hunderte+ |
 | Tankstellen | `amenity=fuel` | Tausende |
+| Stromerzeuger | `power=generator` | ~29.000 (davon Solar ~25.700) |
+| Schaltkästen | `man_made=street_cabinet` | ~16.500 |
+| Wasser | `man_made=water_works/wastewater_plant/water_tower` | ~3.900 |
+| Sirenen | `emergency=siren` | ~1.200 |
 
 Gesamt grob im **niedrigen sechsstelligen Bereich**. In PostGIS trivial (< 100 MB).
 Auf der Karte via Vektor-Tiles / Clustering problemlos.
