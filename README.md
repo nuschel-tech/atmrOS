@@ -27,6 +27,16 @@ Stand-Datum; Änderungen zwischen zwei Scans sind abfragbar.
 
 ---
 
+Dies ist der vollständige Quellcode, nicht ein Ausschnitt davon. Pipeline,
+Datenbankschema, API und Oberfläche liegen hier; wer die Kette selbst laufen
+lassen will, braucht Docker und die drei Werte aus
+[Selbst betreiben](#selbst-betreiben). Die Datenquelle ist öffentlich, der
+Ingest ist reproduzierbar, das Ergebnis lässt sich nachrechnen. Der Betreiber
+dieser Instanz ist damit nicht der einzig mögliche.
+
+**Es läuft noch keine öffentliche Instanz.** Der Stand ist in
+[Status](#status-in-bau) beschrieben.
+
 ## Was erfasst wird
 
 Der Ingest kennt genau sieben Regeln, `(OSM-Key, OSM-Value) → Kategorie`.
@@ -105,19 +115,40 @@ deploy/     systemd-Timer für den Nightly-Ingest
 docs/       DEPLOY.md · BASEMAP.md
 ```
 
-## Schnellstart
+## Selbst betreiben
 
-Du brauchst Docker und Docker Compose. Sonst nichts.
+Voraussetzung ist Docker mit Compose. Sonst nichts.
 
 ```bash
-cp .env.example .env      # Secrets erzeugen (siehe Kommentare in der Datei)
+cp .env.example .env      # anpassen, siehe Tabelle
 docker compose up -d db api web
 docker compose run --rm ingest        # einmal die ganze Kette laufen lassen
 ```
 
-Ein **Login-Gate** ist standardmäßig an (`ATMROS_LAUNCHED=false`): du siehst
-eine Coming-soon-Seite, über `/unlock` mit Passwort kommst du an die App.
-Reverse-Proxy, Timer und TLS stehen in **[`docs/DEPLOY.md`](./docs/DEPLOY.md)**.
+Drei Werte müssen gesetzt werden, alles andere in `.env.example` ist ein
+brauchbarer Vorgabewert:
+
+| Variable | Warum |
+|---|---|
+| `POSTGRES_PASSWORD` | Die Compose-Datei fällt ohne `.env` auf `atmros` zurück. Das ist für einen erreichbaren Host zu wenig. |
+| `ATMROS_SESSION_SECRET` | Signiert das Session-Cookie, muss in `web` **und** `api` identisch sein. Erzeugen: `openssl rand -hex 32`. |
+| `ATMROS_PBF_URL` | Steht auf dem Bayern-Extrakt von Geofabrik. Für eine andere Region hier den passenden PBF eintragen — die sieben Regeln sind nicht bayernspezifisch. |
+
+Das **Login-Gate** ist optional und über `ATMROS_LAUNCHED` geschaltet. Bei
+`false` zeigt die Instanz eine Coming-soon-Seite und lässt nur über `/unlock`
+mit dem Passwort aus `ATMROS_UNLOCK_PASSWORD_HASH` durch; bei `true` läuft die
+Karte offen. Wer die eigene Instanz von Anfang an öffentlich betreiben will,
+setzt `true` und braucht weder Hash noch `/unlock`.
+
+Der Ingest baut für die Way-Geometrie einen Node-Index. Vorgabe ist
+`sparse_file_array` — der Index liegt auf der Platte, der Speicherbedarf bleibt
+klein, und ein 4-GB-Host trägt den Lauf auch mit parallel arbeitendem Postgres.
+`flex_mem` ist schneller, braucht für Bayern aber rund 2,1 GB Spitze (gemessen)
+und ist erst ab reichlich RAM eine gute Idee.
+
+Reverse-Proxy, Timer und TLS stehen in
+**[`docs/DEPLOY.md`](./docs/DEPLOY.md)**, die selbst gehostete Basiskarte in
+**[`docs/BASEMAP.md`](./docs/BASEMAP.md)**.
 
 ### Endpunkte
 
@@ -189,6 +220,9 @@ Daraus die drei Ansichten:
 
 ## Status: In Bau
 
+Der Code läuft, eine öffentliche Instanz gibt es noch nicht. Wer heute
+hineinschauen will, betreibt ihn selbst.
+
 **Schritt 1 — die Kette läuft.** ✅ Gegen das volle Bayern-PBF verifiziert,
 94.780 Objekte. Karte, Filter und Profiler-Panel mit Quelle stehen.
 
@@ -203,6 +237,23 @@ Daraus die drei Ansichten:
 
 **Denkbar als Nächstes:** Archiv- und Zeitreise-Ansicht, Zweitquellen andocken
 (Bundesnetzagentur-EMF, OpenChargeMap), Dichte- und Heatmap-Verdichtung.
+
+## Mitmachen
+
+Issues sind willkommen, Pull Requests auch. Was hilft:
+
+- **Fehlklassifikation melden.** Am nützlichsten mit Region, Kategorie und dem
+  OSM-Objekt — Typ und ID reichen, damit sich der Fall nachstellen lässt.
+- **Neue Kategorien** gehören in `CATEGORY_RULES` in
+  `pipeline/atmros/config.py`. Eine Regel ist ein Paar aus OSM-Tag und
+  Kategorie; die Reihenfolge entscheidet, wenn mehrere passen.
+- **Andere Regionen.** Der Ingest hängt an `ATMROS_PBF_URL`, nicht an Bayern.
+  Wer einen anderen Extrakt fährt und dabei über Kanten stolpert, soll sie
+  bitte aufschreiben.
+
+Die vier Regeln oben sind keine Stilfrage, sondern der Grund, warum es das
+Projekt in dieser Form gibt. Ein Vorschlag, der eine davon aufhebt, wird nicht
+übernommen. Beiträge stehen unter GPL-3.0, wie der Rest des Codes.
 
 ## Über
 
