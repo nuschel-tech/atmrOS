@@ -4,8 +4,9 @@
 
 **Ganz Bayern. Eine Karte.**
 
-Strom, Funk, Laden, Verkehr — die Infrastruktur einer Region auf einer dunklen
-Karte. Aus offenen Daten, mit Gedächtnis, und jeder Punkt nennt seine Quelle.
+Sieben Infrastruktur-Kategorien aus OpenStreetMap, zeitgestempelt in PostGIS,
+als Vektor-Kacheln auf einer dunklen Karte. Jedes Objekt trägt Quelle und
+Stand-Datum; Änderungen zwischen zwei Scans sind abfragbar.
 
 ![Status](https://img.shields.io/badge/Status-In%20Bau-F5A623)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
@@ -26,34 +27,42 @@ Karte. Aus offenen Daten, mit Gedächtnis, und jeder Punkt nennt seine Quelle.
 
 ---
 
-## Was hier liegt
+## Was erfasst wird
 
-Sendemasten. Strommasten. Umspannwerke. Ladesäulen. Kameras. Türme.
-Tankstellen. Alles auf **einer** Ebene, gemeinsam filterbar — nicht in sieben
-getrennten Portalen.
+Der Ingest kennt genau sieben Regeln, `(OSM-Key, OSM-Value) → Kategorie`.
+Die Reihenfolge ist die Priorität: die erste Übereinstimmung gewinnt, damit
+die Klassifikation deterministisch bleibt, auch wenn ein Element mehrere
+passende Tags trägt.
 
-**94.780 Objekte**, real gegen das volle Bayern-Extrakt verifiziert.
+| OSM-Tag | Kategorie | |
+|---|---|---|
+| `man_made=surveillance` | `surveillance` | Überwachungskameras |
+| `man_made=mast` | `mast` | Sendemasten |
+| `man_made=tower` | `tower` | Türme |
+| `power=substation` | `substation` | Umspannwerke |
+| `power=tower` | `power_tower` | Strommasten |
+| `amenity=charging_station` | `charging_station` | Ladesäulen |
+| `amenity=fuel` | `fuel` | Tankstellen |
 
-## Vier Grundsätze
+Alles andere wird nicht gelesen. Ein Vorfilter über die Tag-Keys schließt den
+Großteil der OSM-Elemente aus, bevor die Regeln überhaupt greifen.
 
-**Alles an einem Ort.** Verschiedene Objekttypen aus OpenStreetMap,
-verschmolzen zu einer Ebene. Du filterst sie zusammen, nicht nacheinander.
+**94.780 Objekte** im vollen Bayern-Extrakt (Stand der Verifikation).
 
-**Immer im Bild.** atmrOS speichert nie einen *Zustand*, sondern immer
-**Beobachtungen mit Zeitstempel**. Aus derselben Tabelle fallen Live-Ansicht,
-Archiv und Änderungen über Zeit — NEU, GEÄNDERT, GELÖSCHT, WIEDER.
+### Untertypen, wo die Kategorie zu grob ist
 
-**Zum Nachschauen gebaut.** Jedes Objekt trägt seine Quelle und sein
-Stand-Datum, dazu einen Deep-Link zurück nach OpenStreetMap. Wenn du es genau
-wissen willst, bist du einen Klick von der Quelle entfernt.
+`power=substation` erfasst überwiegend kleine Ortsnetzstationen, `tower` und
+`mast` fangen Kirch-, Wasser- und Aussichtstürme mit ein. Für diese drei
+Kategorien wird ein `subtype` aus den Tags gezogen — `substation` bzw.
+`tower:type` — und über `object(category, subtype)` indiziert. Ein Kirchturm
+läuft damit nicht als Sendemast durch.
 
-**Die Karte kennt dich nicht.** Gemessen werden Systeme, nie Menschen. Eine
-Überwachungskamera ist ein Objekt; wer gefilmt wird, ist es nie.
+### Was nicht im Modell steht
 
-> Und ein Kirchturm läuft hier nicht als „Sendemast" durch. `man_made=tower`,
-> `mast` und `power=substation` sind zu grob — atmrOS erfasst den Untertyp
-> (`tower:type`, `substation`) und macht ihn filterbar. Kirchtürme,
-> Wehrtürme und Ortsnetzstationen bleiben getrennt.
+Die sieben Regeln matchen ausschließlich Infrastruktur-Objekte. Personen-
+bezogene OSM-Tags werden weder gefiltert noch gespeichert; `observation.attrs`
+enthält die Tags des getroffenen Objekts, sonst nichts. Eine Kamera ist ein
+Punkt mit Kategorie und Untertyp — was sie aufnimmt, ist kein Feld im Schema.
 
 ## Woher der Name kommt
 
@@ -65,8 +74,8 @@ Anzeige mit Quelle und Stand.
 
 ## Die Kette
 
-Sieben Schritte, lückenlos. Bricht einer ab, bricht die ganze Kette — halb
-geschriebene Stände gibt es nicht.
+Sieben Schritte in einer Transaktion. Bricht einer ab, bricht der ganze Lauf;
+halb geschriebene Stände gibt es nicht.
 
 ```
 1. SAMMELN     Geofabrik Bayern-PBF laden (Last-Modified-gesteuert)
@@ -121,18 +130,40 @@ Reverse-Proxy, Timer und TLS stehen in **[`docs/DEPLOY.md`](./docs/DEPLOY.md)**.
 | `GET /status` | ob gerade ein Ingest läuft |
 | `GET /health` | Liveness |
 
-## Ein Modell, drei Ansichten
+## Datenmodell
 
-Eine neue `observation`-Zeile entsteht nur, wenn sich der Attribut-Hash
-gegenüber der letzten Beobachtung ändert. Ein zweiter Lauf über dasselbe
-Extrakt erzeugt also keine Dubletten.
+Gespeichert wird nie ein *Zustand*, sondern immer eine **Beobachtung mit
+Zeitstempel**. Live-Ansicht, Archiv und Änderungen fallen aus denselben zwei
+Tabellen.
 
-Verschwundene Objekte werden **nicht gelöscht**, sondern als abwesend markiert
-(`present=false`). Taucht eines wieder auf, ist das ein *WIEDER*-Ereignis.
+| Tabelle | Inhalt |
+|---|---|
+| `object` | stabile Identität: `(osm_type, osm_id)` als PK, `category`, `subtype`, `present`, `first_seen`/`last_seen`, `geom geometry(Point,4326)` |
+| `observation` | eine Zeile je *Änderung*: `attrs jsonb` (die OSM-Tags), `attr_hash char(64)`, `source`, `source_url`, `observed_at` |
+| `change_event` | Diff zweier Scans: `event_type` ∈ `NEW` / `CHANGED` / `DELETED` / `RESTORED`, dazu `diff jsonb` |
+| `ingest_state` | eine Zeile, Status des laufenden Ingests für den Banner im Frontend |
 
-- **Live** — neueste Beobachtung je Objekt, nur präsente
+Vier Entscheidungen, die im Schema stehen und einen Grund haben:
+
+- **Ways und Areas werden auf einen Repräsentativpunkt reduziert** (Mittel der
+  gültigen Knoten). Marker-tauglich und MVT-freundlich; die Geometrie liegt
+  einheitlich als Punkt in 4326.
+- **Die Dedup gegen den letzten Hash passiert app-seitig, nicht als
+  `UNIQUE(object, hash)`.** Ein Objekt, das auf einen früheren Hash
+  zurückspringt, muss eine neue Zeile erzeugen — sonst würde die
+  Constraint ein `RESTORED` fälschlich blocken.
+- **Verschwundene Objekte werden nicht gelöscht**, sondern auf
+  `present=false` gesetzt. Die Historie bleibt, die Live-Ansicht filtert.
+- **Keine gespeicherte 3857-Spalte.** `ST_Transform` ist `STABLE`, nicht
+  `IMMUTABLE`, und darf deshalb nicht in einer generierten Spalte stehen. Der
+  Tile-Endpunkt transformiert stattdessen die Kachel-Bounds nach 4326 und
+  trifft damit den GiST-Index auf `object.geom`.
+
+Daraus die drei Ansichten:
+
+- **Live** — neueste Beobachtung je Objekt, `present = true`
 - **Archiv** — alle Beobachtungen über Zeit
-- **Änderungen** — Differenz zweier aufeinanderfolgender Scans
+- **Änderungen** — `change_event` zwischen zwei aufeinanderfolgenden Scans
 
 ## Woher die Daten kommen
 
@@ -146,12 +177,15 @@ Verschwundene Objekte werden **nicht gelöscht**, sondern als abwesend markiert
 
 ## Vier Regeln, nicht verhandelbar
 
-1. **Systeme messen, niemals Menschen.** Nur Infrastruktur, keine Personendaten.
-2. **Jede Anzeige trägt Quelle und Stand-Datum.** Die Signatur des Projekts.
-3. **Das Rohlager ist unantastbar.** Einmal geschrieben, nie geändert. Die
-   SHA-256-Kette ist der Beweis.
-4. **Lückenlos vor vollständig.** Der Ingest schreibt in *einer* Transaktion.
-   Geht etwas schief, bricht er sauber ab statt halb zu committen.
+1. **Nur Infrastruktur.** Die Filterregeln matchen Objekte, keine
+   personenbezogenen Tags. Was nicht in der Tabelle oben steht, wird nicht
+   eingelesen.
+2. **Jede Zeile trägt ihre Herkunft.** `source` und `source_url` stehen in
+   *jeder* `observation`, nicht global in einer Konfigurationsdatei.
+3. **Das Rohlager ist unantastbar.** Die gefilterten Objekte liegen als
+   Parquet mit SHA-256-Manifest. Einmal geschrieben, nie geändert.
+4. **Lückenlosigkeit vor Features.** Ein Ingest committet ganz oder gar
+   nicht.
 
 ## Status: In Bau
 
@@ -160,7 +194,8 @@ Verschwundene Objekte werden **nicht gelöscht**, sondern als abwesend markiert
 
 **Schritt 2 — Gedächtnis und Automatik.** ✅
 
-- Diff-Logik (`change_event`: NEU/GEÄNDERT/GELÖSCHT/WIEDER) plus `present`-Modell
+- Diff-Logik (`change_event.event_type`: `NEW` / `CHANGED` / `DELETED` /
+  `RESTORED`) plus `present`-Modell
 - Änderungsansicht unter `/changes`, Liste und Pink-Markierung auf der Karte
 - Nightly-Ingest über systemd-Timer, Last-Modified-gesteuert — holt nur bei
   neuem Stand
@@ -175,9 +210,9 @@ Ein Projekt von **nuschel tech**, dem Software-Bereich von **MultaEnhavo**.
 Kein Auftragsgeschäft, sondern ein Lab: gebaut, weil es uns interessiert,
 betrieben auf eigener Infrastruktur.
 
-Design: dunkel und technisch, an Leitstände angelehnt. Lesbar und ernst, kein
-Glitch-Cosplay. Pink markiert echte Auffälligkeiten (NEU/GEÄNDERT), nicht als
-Dauer-Deko.
+Die Oberfläche ist dunkel gehalten und an Leitstände angelehnt. Die
+Akzentfarbe Pink ist reserviert: sie markiert `NEW`- und `CHANGED`-Ereignisse
+auf der Karte und wird sonst nicht verwendet.
 
 ## Lizenz und Name
 
