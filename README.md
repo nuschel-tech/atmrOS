@@ -11,7 +11,7 @@ nennt ihre Quelle.
 ![PostGIS](https://img.shields.io/badge/DB-PostGIS%2016-336791?logo=postgresql&logoColor=white)
 ![Astro](https://img.shields.io/badge/Web-Astro%20SSR-BC52EE?logo=astro&logoColor=white)
 ![MapLibre](https://img.shields.io/badge/Karte-MapLibre%20GL-396CB2?logo=maplibre&logoColor=white)
-![Code: MIT](https://img.shields.io/badge/Code-MIT-E31C8D)
+![Code: GPL-3.0](https://img.shields.io/badge/Code-GPL--3.0-E31C8D)
 ![Daten: ODbL](https://img.shields.io/badge/Daten-ODbL%20·%20OpenStreetMap-7EBC6F)
 
 </div>
@@ -157,11 +157,16 @@ Anmutung an Leitstände angelehnt — lesbar und ernst, kein Glitch-Cosplay. Die
 Akzentfarbe Pink markiert echte Auffälligkeiten (NEU/GEÄNDERT), nicht als
 Dauer-Deko.
 
-**Lizenz:** Der Code steht unter der [MIT-Lizenz](./LICENSE). Die Geodaten
-nicht — sie stammen aus OpenStreetMap und stehen unter **ODbL**, mit
-Namensnennung „© OpenStreetMap-Mitwirkende" bei jeder Verwendung und
-Share-alike, sobald jemand die abgeleitete Datenbank weitergibt. Zwei
-Lizenzen, zwei Geltungsbereiche — Einzelheiten in [`NOTICE`](./NOTICE).
+**Lizenz:** Der Code steht unter der [GPL-3.0](./LICENSE). Wer eine geänderte
+Fassung **weitergibt** — als Abbild, als Auslieferung, als Fork mit Binaries —
+muss den Quellcode mitliefern. Reines Hosten ohne Weitergabe einer Kopie löst
+diese Pflicht nicht aus; dafür gäbe es die AGPL.
+
+Die Geodaten sind davon nicht berührt: sie stammen aus OpenStreetMap und
+stehen unter **ODbL**, mit Namensnennung „© OpenStreetMap-Mitwirkende" bei
+jeder Verwendung und Share-alike, sobald jemand die abgeleitete Datenbank
+weitergibt. Zwei Lizenzen, zwei Geltungsbereiche — Einzelheiten in
+[`NOTICE`](./NOTICE).
 
 atmrOS ist ein unabhängiges Projekt und steht in keiner Verbindung zu Ubisoft
 oder zu Watch Dogs.

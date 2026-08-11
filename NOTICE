@@ -1,16 +1,18 @@
 atmrOS
 Copyright (c) 2026 nuschel tech by MultaEnhavo · Nico Thomas Henkel
 
-Diese Datei nennt, was die MIT-Lizenz in LICENSE *nicht* abdeckt. Sie steht
-bewusst hier und nicht in LICENSE: GitHub erkennt eine Lizenzdatei nur dann
-als MIT, wenn sie ausschliesslich den Lizenztext enthaelt.
+Der Code steht unter der GNU General Public License v3.0 (siehe LICENSE).
+Diese Datei nennt, was die GPL *nicht* abdeckt. Sie steht bewusst hier und
+nicht in LICENSE: die GPL erlaubt nur unveraenderte Kopien ihres Textes, und
+GitHub erkennt eine Lizenzdatei auch nur dann, wenn sie ausschliesslich den
+Lizenztext enthaelt.
 
 
 GEODATEN
 --------
 
 Die Geodaten stammen aus OpenStreetMap und stehen unter der Open Database
-License (ODbL), nicht unter MIT.
+License (ODbL), nicht unter der GPL.
 
   * Namensnennung: "© OpenStreetMap-Mitwirkende" ist bei jeder Verwendung
     erforderlich und in der Anwendung eingebaut.
