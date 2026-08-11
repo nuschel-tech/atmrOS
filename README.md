@@ -2,14 +2,16 @@
 
 # atmrOS
 
-**Das ehrliche ctOS.** Eine dunkle Karte Bayerns, die offene Geodaten zu *einer*
-Infrastruktur-Ebene verschmilzt — mit Gedächtnis, und jede Anzeige nennt ihre Quelle.
+**Von der ctOS-Idee inspiriert.** Eine dunkle Karte Bayerns, die offene Geodaten
+zu *einer* Infrastruktur-Ebene verschmilzt — mit Gedächtnis, und jede Anzeige
+nennt ihre Quelle.
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/DB-PostGIS%2016-336791?logo=postgresql&logoColor=white)
 ![Astro](https://img.shields.io/badge/Web-Astro%20SSR-BC52EE?logo=astro&logoColor=white)
 ![MapLibre](https://img.shields.io/badge/Karte-MapLibre%20GL-396CB2?logo=maplibre&logoColor=white)
+![Code: MIT](https://img.shields.io/badge/Code-MIT-E31C8D)
 ![Daten: ODbL](https://img.shields.io/badge/Daten-ODbL%20·%20OpenStreetMap-7EBC6F)
 
 </div>
@@ -21,8 +23,14 @@ Infrastruktur-Ebene verschmilzt — mit Gedächtnis, und jede Anzeige nennt ihre
 
 ## Was ist atmrOS?
 
-Wie das *ctOS* aus **Watch Dogs** — nur ehrlich. atmrOS legt die unsichtbare
-Verkabelung einer Region als **ein** Gesamtbild auf eine dunkle Karte:
+Der Anstoß kam aus **Watch Dogs**: dort zeigt das fiktive *ctOS* eine Stadt als
+ein einziges vernetztes System. Von dieser Idee ist genau ein Gedanke übrig
+geblieben — Infrastruktur als Zusammenhang statt als Einzelpunkte. Alles andere
+ist anders gebaut: echte offene Daten statt Spielkulisse, Systeme statt
+Menschen, jede Anzeige mit Quelle und Stand.
+
+atmrOS legt die unsichtbare Verkabelung einer Region als **ein** Gesamtbild auf
+eine dunkle Karte:
 Sendemasten, Strommasten, Umspannwerke, Ladesäulen, Überwachungskameras,
 Türme, Tankstellen. Kein Single-Purpose-Finder, sondern die **Verknüpfung**
 vieler offener Quellen zu einer Ebene.
@@ -144,9 +152,16 @@ markiert (`present=false`) — kommt ein Objekt zurück, ist das ein *WIEDER*-Er
 
 ## Über
 
-Eine Fähigkeit von **MultaEnhavo**. Design: Dark, technisch, ctOS-Anmutung —
-lesbar und ernst, kein Glitch-Cosplay. Die Akzentfarbe Pink markiert echte
-Auffälligkeiten (NEU/GEÄNDERT), nicht als Dauer-Deko.
+Eine Fähigkeit von **MultaEnhavo**. Design: dunkel und technisch, in der
+Anmutung an Leitstände angelehnt — lesbar und ernst, kein Glitch-Cosplay. Die
+Akzentfarbe Pink markiert echte Auffälligkeiten (NEU/GEÄNDERT), nicht als
+Dauer-Deko.
 
-**Lizenz:** Geodaten © OpenStreetMap-Mitwirkende (ODbL). Der Projektcode steht
-unter der vom Betreiber gewählten Lizenz (siehe `LICENSE`, falls vorhanden).
+**Lizenz:** Der Code steht unter der [MIT-Lizenz](./LICENSE). Die Geodaten
+nicht — sie stammen aus OpenStreetMap und stehen unter **ODbL**, mit
+Namensnennung „© OpenStreetMap-Mitwirkende" bei jeder Verwendung und
+Share-alike, sobald jemand die abgeleitete Datenbank weitergibt. Zwei
+Lizenzen, zwei Geltungsbereiche.
+
+atmrOS ist ein unabhängiges Projekt und steht in keiner Verbindung zu Ubisoft
+oder zu Watch Dogs.
