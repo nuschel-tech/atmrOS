@@ -30,6 +30,38 @@ BASISKARTE
 Selbst gehostete Protomaps-Kacheln, siehe docs/BASEMAP.md.
 
 
+NAME UND KENNZEICHEN
+--------------------
+
+Die GPL uebertraegt Urheber- und Patentrechte. Rechte an Namen und Zeichen
+uebertraegt sie nicht — ihr Abschnitt 7(e) erlaubt ausdruecklich, das
+klarzustellen. Genau das geschieht hier.
+
+Nicht mitlizenziert sind:
+
+  * der Name "atmrOS"
+  * die Wortmarke "nuschel tech" und der Name "MultaEnhavo"
+  * das Nuschel-Zeichen und die uebrigen Markenbestandteile in web/public/
+
+Der Code darf nach den Bedingungen der GPL kopiert, geaendert und
+weitergegeben werden. Fuer den Namen gilt das nicht.
+
+Wer eine geaenderte Fassung weitergibt, waehlt dafuer einen eigenen Namen
+und ein eigenes Zeichen. Abschnitt 7(c) der GPL laesst diese Bedingung
+ausdruecklich zu: geaenderte Fassungen duerfen verlangterweise als vom
+Original verschieden gekennzeichnet werden. Der Grund ist derselbe, den
+die GPL in ihrer Praeambel selbst nennt — Probleme einer fremden Fassung
+sollen nicht dem urspruenglichen Autor zugerechnet werden.
+
+Erlaubt und erwuenscht bleibt die sachliche Nennung: "basiert auf atmrOS",
+"Fork von atmrOS", ein Link hierher. Nicht erlaubt ist, die eigene Fassung
+so zu benennen oder zu gestalten, dass sie fuer das Original gehalten wird.
+
+Stand: "atmrOS" ist eine nicht eingetragene Bezeichnung. Dieser Abschnitt
+ist ein Hinweis auf die Rechtslage und begruendet fuer sich genommen kein
+Markenrecht; er greift, soweit das Kennzeichenrecht ihn traegt.
+
+
 UNABHAENGIGKEIT
 ---------------
 

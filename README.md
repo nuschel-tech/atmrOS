@@ -165,8 +165,15 @@ diese Pflicht nicht aus; dafür gäbe es die AGPL.
 Die Geodaten sind davon nicht berührt: sie stammen aus OpenStreetMap und
 stehen unter **ODbL**, mit Namensnennung „© OpenStreetMap-Mitwirkende" bei
 jeder Verwendung und Share-alike, sobald jemand die abgeleitete Datenbank
-weitergibt. Zwei Lizenzen, zwei Geltungsbereiche — Einzelheiten in
-[`NOTICE`](./NOTICE).
+weitergibt. Zwei Lizenzen, zwei Geltungsbereiche.
+
+**Name:** Der Code ist frei, der Name nicht. „atmrOS", „nuschel tech" und das
+Nuschel-Zeichen sind nicht mitlizenziert — die GPL überträgt keine Rechte an
+Kennzeichen, und ihr Abschnitt 7(e) erlaubt ausdrücklich, das klarzustellen.
+Wer eine geänderte Fassung weitergibt, wählt bitte einen eigenen Namen.
+„Basiert auf atmrOS" ist dagegen willkommen.
+
+Einzelheiten zu Daten, Basiskarte und Namen: [`NOTICE`](./NOTICE).
 
 atmrOS ist ein unabhängiges Projekt und steht in keiner Verbindung zu Ubisoft
 oder zu Watch Dogs.
