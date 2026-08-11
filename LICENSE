@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Diese Lizenz gilt für den **Code** in diesem Repository.
-
-Die **Geodaten** sind davon nicht berührt: sie stammen aus OpenStreetMap und
-stehen unter der Open Database License (ODbL). Die Namensnennung
-„© OpenStreetMap-Mitwirkende" ist bei jeder Verwendung erforderlich, und wer
-die daraus abgeleitete Datenbank weitergibt, muss sie wieder unter ODbL
-stellen. Einzelheiten in der README unter „Datenquellen & Lizenz".
-
-atmrOS ist ein unabhängiges Projekt und steht in keiner Verbindung zu Ubisoft
-oder zu Watch Dogs.

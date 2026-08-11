@@ -161,7 +161,7 @@ Dauer-Deko.
 nicht — sie stammen aus OpenStreetMap und stehen unter **ODbL**, mit
 Namensnennung „© OpenStreetMap-Mitwirkende" bei jeder Verwendung und
 Share-alike, sobald jemand die abgeleitete Datenbank weitergibt. Zwei
-Lizenzen, zwei Geltungsbereiche.
+Lizenzen, zwei Geltungsbereiche — Einzelheiten in [`NOTICE`](./NOTICE).
 
 atmrOS ist ein unabhängiges Projekt und steht in keiner Verbindung zu Ubisoft
 oder zu Watch Dogs.
